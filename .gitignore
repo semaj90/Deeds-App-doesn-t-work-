@@ -99,25 +99,19 @@ dist/
 # OS generated files
 .DS_Store
 Thumbs.db
-node_modules
 
 # Output
 .output
 .vercel
 .netlify
 .wrangler
-/.svelte-kit
-/build
-
-# OS
-.DS_Store
-Thumbs.db
 
 # Env
-.env
-.env.*
+# .env and .env.* are already covered by the more specific rules above
+# (e.g., .env, .env*.local, .env.*.local)
+# Keeping them is fine, but the more specific ones take precedence.
 !.env.example
-!.env.test
+!.env.test # Keep this if you have a specific .env.test file you want to commit
 
 # Vite
 vite.config.js.timestamp-*
