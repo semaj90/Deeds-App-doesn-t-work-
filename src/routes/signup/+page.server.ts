@@ -1,8 +1,8 @@
 import { fail, redirect } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
 import { db } from '$lib/server/db';
-import { userTable } from '$lib/server/db/schema';
-import { hashPassword } from '$lib/server/auth';
+import { users } from '$lib/server/db/schema';
+import { hashPassword } from '$lib/server/authUtils';
 import { eq } from 'drizzle-orm';
 import { DrizzleError } from 'drizzle-orm';
 
@@ -16,21 +16,23 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
 	default: async ({ request }) => {
 		const formData = await request.formData();
+		const name = formData.get("name") as string;
 		const email = formData.get("email") as string;
 		const password = formData.get("password") as string;
 
-		if (!email || !password) {
-			return fail(400, { error: 'Email and password are required.' });
+		if (!name || !email || !password) {
+			return fail(400, { error: 'Name, email and password are required.' });
 		}
 
 		const hashedPassword = await hashPassword(password);
 
 		try {
-			await db.insert(userTable).values({
+			await db.insert(users).values({
+				id: crypto.randomUUID(),
+				name,
 				email,
 				hashedPassword,
-                id: crypto.randomUUID(),
-                username: email.split('@')[0]
+				role: 'user'
 			});
 		} catch (e) {
 			if (e instanceof DrizzleError && e.message.includes('UNIQUE constraint failed')) {

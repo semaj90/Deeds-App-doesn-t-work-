@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { userTable } from '$lib/server/db/schema';
+import { users } from '$lib/server/db/schema';
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types'; // Import PageServerLoad
 
@@ -10,6 +10,6 @@ export const load: PageServerLoad = async ({ locals }) => {
     }
 
     // Fetch all users from the database
-    const allUsers = await db.select().from(userTable);
+    const allUsers = await db.select().from(users);
     return { users: allUsers };
 };

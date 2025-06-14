@@ -44,17 +44,170 @@
             showDeleteConfirmation = false;
         }
     }
-</script>
 
-<div class="container mt-4 text-dark">
+    // Function to mark case as ready for trial
+    async function markReadyForTrial() {
+        if (!caseItem || !caseItem.id) return;
+        const response = await fetch(`/api/cases/${caseItem.id}/ready`, { method: 'POST' });
+        if (response.ok) {
+            caseItem.status = 'ready-for-trial';
+        } else {
+            alert('Failed to update status');
+        }
+    }
+</script>
+<div class="case-detail-page">
     {#if caseItem}
-        <h1 class="mb-4 text-primary">Case: {caseItem.name}</h1>
-        <p><strong>Description:</strong> {caseItem.description || 'No description provided.'}</p>
-        <p><strong>Created At:</strong> {new Date(caseItem.createdAt).toLocaleDateString()}</p>
-        <p><strong>User ID:</strong> {caseItem.userId}</p>
-        <div class="button-group mt-4">
-            <button on:click={goToEdit} class="btn btn-primary">Edit Case</button>
-            <button on:click={() => showDeleteConfirmation = true} class="btn btn-danger">Delete Case</button>
+        <h1 class="text-primary">{caseItem.name}</h1>
+        <p class="text-muted">Created: {new Date(caseItem.createdAt).toLocaleDateString()}</p>
+        <p class="text-dark">{caseItem.description || 'No description available.'}</p>
+        <p class="text-dark">Status: {caseItem.status}</p>
+
+        <div class="button-group">
+            <button class="btn btn-primary" on:click={goToEdit}>Edit Case</button>
+            <button class="btn btn-danger" on:click={() => showDeleteConfirmation = true}>Delete Case</button>
+            {#if caseItem.status === 'ready-for-trial'}
+                <button class="btn btn-secondary" disabled>Ready for Trial</button>
+            {:else}
+                <button class="btn btn-success" on:click={markReadyForTrial}>Mark as Ready for Trial</button>
+            {/if}   
+            {#if caseItem.status === 'ready-for-trial'}
+                <button class="btn btn-secondary" disabled>Ready for Trial</button>
+            {:else}
+                <script lang="ts">
+                    import { page } from '$app/stores';
+                    import { onMount } from 'svelte';
+                    import { goto } from '$app/navigation';
+                    import type { Case } from '$lib/data/types';
+
+                    // Explicitly define PageData type to resolve TypeScript errors
+                    interface PageData {
+                        case: Case;
+                    }
+
+                    export let data: PageData;
+
+                    let caseItem: Case = data.case;
+                    let showDeleteConfirmation = false;
+
+                    // Function to handle navigation to edit page
+                    function goToEdit() {
+                        if (caseItem && caseItem.id) {
+                            goto(`/case/${caseItem.id}/edit`);
+                        }
+                    }
+
+                    // Function to handle case deletion
+                    async function deleteCase() {
+                        if (!caseItem || !caseItem.id) return;
+
+                        try {
+                            const response = await fetch(`/api/cases/${caseItem.id}`, {
+                                method: 'DELETE'
+                            });
+
+                            if (response.ok) {
+                                alert('Case deleted successfully!');
+                                goto('/'); // Redirect to home or cases list page
+                            } else {
+                                const errorData = await response.json();
+                                alert(`Failed to delete case: ${errorData.error || response.statusText}`);
+                            }
+                        } catch (error) {
+                            console.error('Error deleting case:', error);
+                            alert('An error occurred while trying to delete the case.');
+                        } finally {
+                            showDeleteConfirmation = false;
+                        }
+                    }
+
+                    // Function to mark case as ready for trial
+                    async function markReadyForTrial() {
+                        if (!caseItem || !caseItem.id) return;
+                        const response = await fetch(`/api/cases/${caseItem.id}/ready`, { method: 'POST' });
+                        if (response.ok) {
+                            caseItem.status = 'ready-for-trial';
+                        } else {
+                            alert('Failed to update status');
+                        }
+                    }
+                </script>
+    const response = await fetch(`/api/cases/${caseItem.id}/ready`, { method: 'POST' });
+    if (response.ok) {
+        caseItem.status = 'ready-for-trial';
+    } else {
+        alert('Failed to update status');
+    }
+    <button class="btn btn-success" on:click={markReadyForTrial}>Mark as Ready for Trial</button>
+{/if}
+            {#if caseItem.status !== 'ready-for-trial'}
+            <script lang="ts">
+                import { page } from '$app/stores';
+                import { onMount } from 'svelte';
+                import { goto } from '$app/navigation';
+                import type { Case } from '$lib/data/types';
+
+                // Explicitly define PageData type to resolve TypeScript errors
+                interface PageData {
+                    case: Case;
+                }
+
+                export let data: PageData;
+
+                let caseItem: Case = data.case;
+                let showDeleteConfirmation = false;
+
+                // Function to handle navigation to edit page
+                function goToEdit() {
+                    if (caseItem && caseItem.id) {
+                        goto(`/case/${caseItem.id}/edit`);
+                    }
+                }
+
+                // Function to handle case deletion
+                async function deleteCase() {
+                    if (!caseItem || !caseItem.id) return;
+
+                    try {
+                        const response = await fetch(`/api/cases/${caseItem.id}`, {
+                            method: 'DELETE'
+                        });
+
+                        if (response.ok) {
+                            alert('Case deleted successfully!');
+                            goto('/'); // Redirect to home or cases list page
+                        } else {
+                            const errorData = await response.json();
+                            alert(`Failed to delete case: ${errorData.error || response.statusText}`);
+                        }
+                    } catch (error) {
+                        console.error('Error deleting case:', error);
+                        alert('An error occurred while trying to delete the case.');
+                    } finally {
+                        showDeleteConfirmation = false;
+                    }
+                }
+
+                // Function to mark case as ready for trial
+                async function markReadyForTrial() {
+                    if (!caseItem || !caseItem.id) return;
+                    const response = await fetch(`/api/cases/${caseItem.id}/ready`, { method: 'POST' });
+                    if (response.ok) {
+                        caseItem.status = 'ready-for-trial';
+                    } else {
+                        alert('Failed to update status');
+                    }
+                }
+            </script>
+  const response = await fetch(`/api/cases/${caseItem.id}/ready`, { method: 'POST' });
+  if (response.ok) {
+    caseItem.status = 'ready-for-trial';
+  } else {
+    alert('Failed to update status');
+  }
+}
+  <button class="btn btn-success" on:click={markReadyForTrial}>Mark as Ready for Trial</button>
+{/if}
         </div>
     {:else}
         <p class="text-dark">Case not found or loading...</p>

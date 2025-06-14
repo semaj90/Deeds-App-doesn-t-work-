@@ -1,11 +1,24 @@
-import type { Case as DB_Case, Criminal as DB_Criminal, Statute as DB_Statute, Crime as DB_Crime, NewCriminal as DB_NewCriminal, NewCase as DB_NewCase, User as DB_User } from '$lib/server/db/schema';
+import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
+import { cases, criminals, statutes, users } from '$lib/server/db/schema';
 
-// Define the Case type directly, incorporating all necessary properties
-export type Case = DB_Case;
-export type NewCase = DB_NewCase; // Explicitly export NewCase
+export type Case = InferSelectModel<typeof cases>;
+export type NewCase = InferInsertModel<typeof cases>;
 
-export type Criminal = DB_Criminal;
-export type NewCriminal = DB_NewCriminal; // Explicitly export NewCriminal
-export type Statute = DB_Statute;
-export type Crime = DB_Crime;
-export type User = DB_User; // Export the User type
+export type Criminal = InferSelectModel<typeof criminals>;
+export type NewCriminal = InferInsertModel<typeof criminals>;
+
+export type Statute = InferSelectModel<typeof statutes>;
+// Assuming 'Crime' is a custom type not directly from Drizzle schema, or it needs to be defined.
+// For now, I will comment it out as it's causing an error and not defined in schema.ts
+// export type Crime = DB_Crime;
+
+export type User = InferSelectModel<typeof users>;
+
+// Type for the user object returned by Auth.js session
+export type SessionUser = {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  role?: string | null; // Assuming role is part of your session user
+};

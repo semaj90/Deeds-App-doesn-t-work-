@@ -29,10 +29,10 @@ export async function GET({ url }) {
     if (searchTerm) {
         const searchPattern = `%${searchTerm.toLowerCase()}%`;
         query = query.where(
-            sql`${crimes.name} ILIKE ${searchPattern} OR ${crimes.description} ILIKE ${searchPattern} OR ${criminals.firstName} ILIKE ${searchPattern} OR ${criminals.lastName} ILIKE ${searchPattern} OR ${statutes.name} ILIKE ${searchPattern} OR ${statutes.sectionNumber} ILIKE ${searchPattern}`
+            sql`${crimes.name} ILIKE ${searchPattern} OR ${crimes.description} ILIKE ${searchPattern} OR ${criminals.name} ILIKE ${searchPattern} OR ${statutes.code} ILIKE ${searchPattern} OR ${statutes.title} ILIKE ${searchPattern}`
         );
         countQuery = countQuery.where(
-            sql`${crimes.name} ILIKE ${searchPattern} OR ${crimes.description} ILIKE ${searchPattern} OR ${criminals.firstName} ILIKE ${searchPattern} OR ${criminals.lastName} ILIKE ${searchPattern} OR ${statutes.name} ILIKE ${searchPattern} OR ${statutes.sectionNumber} ILIKE ${searchPattern}`
+            sql`${crimes.name} ILIKE ${searchPattern} OR ${crimes.description} ILIKE ${searchPattern} OR ${criminals.name} ILIKE ${searchPattern} OR ${statutes.code} ILIKE ${searchPattern} OR ${statutes.title} ILIKE ${searchPattern}`
         );
     }
 

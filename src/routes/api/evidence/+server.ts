@@ -1,71 +1,59 @@
-import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { evidence } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
 import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import type { RequestHandler } from '@sveltejs/kit';
 
-const UPLOAD_DIR = 'static/uploads/evidence';
-
-// Ensure the upload directory exists
-async function ensureUploadDir() {
-    try {
-        await fs.mkdir(UPLOAD_DIR, { recursive: true });
-    } catch (error) {
-        console.error('Failed to create upload directory:', error);
-    }
+// Placeholder extract and summarize functions
+async function extractTextFromFile(filePath: string): Promise<string> {
+  // TODO: Implement using pdf-parse, docx-parser, etc.
+  return 'Extracted text content';
 }
 
-ensureUploadDir();
-
-export async function GET() {
-    const allEvidence = await db.select().from(evidence);
-    return json(allEvidence);
+async function summarizeText(text: string): Promise<string> {
+  // TODO: Call local AI summarizer (Python server, Ollama, etc.)
+  return `Summary of: ${text.slice(0, 200)}...`;
 }
 
-export async function POST({ request }) {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const caseId = formData.get('caseId') as string;
-    const poiId = formData.get('poiId') as string | null;
-
-    if (!file) {
-        return json({ error: 'No file uploaded' }, { status: 400 });
-    }
-
-    if (!caseId) {
-        return json({ error: 'caseId is required' }, { status: 400 });
-    }
-
-    const fileExtension = path.extname(file.name);
-    const uniqueFileName = `${uuidv4()}${fileExtension}`;
-    const filePath = path.join(UPLOAD_DIR, uniqueFileName);
-
-    try {
-        // Save the file to the local file system
-        await fs.writeFile(filePath, Buffer.from(await file.arrayBuffer()));
-
-        // TODO: Implement AI summarization and tagging here
-        // For now, a placeholder summary and tags
-        const fileSummary = `Summary of ${file.name}`;
-        const fileTags = ['uploaded', file.type.split('/')[0]];
-
-        const newEvidence = await db.insert(evidence).values({
-            caseId: parseInt(caseId),
-            poiId: poiId ? parseInt(poiId) : null,
-            fileName: file.name,
-            filePath: filePath,
-            fileType: file.type,
-            fileSize: file.size,
-            summary: fileSummary,
-            tags: fileTags,
-            originalContent: '', // TODO: Extract content for text-based files
-        }).returning();
-
-        return json(newEvidence[0], { status: 201 });
-    } catch (error) {
-        console.error('Error uploading file:', error);
-        return json({ error: 'Failed to upload file' }, { status: 500 });
-    }
+async function generateTags(text: string): Promise<string[]> {
+  // TODO: Local LLM or keywords extraction
+  return ['tag1', 'tag2'];
 }
+
+export const POST: RequestHandler = async ({ request }) => {
+  const formData = await request.formData();
+  const file = formData.get('file') as File;
+  const caseId = formData.get('caseId');
+  const poiId = formData.get('poiId');
+
+  if (!file) {
+    return new Response(JSON.stringify({ error: 'No file uploaded' }), { status: 400 });
+  }
+
+  const uploadDir = path.resolve('static/uploads/evidence');
+  await fs.mkdir(uploadDir, { recursive: true });
+  const uniqueFilename = `${uuidv4()}-${file.name}`;
+  const filePath = path.join(uploadDir, uniqueFilename);
+  const buffer = Buffer.from(await file.arrayBuffer());
+  await fs.writeFile(filePath, buffer);
+
+  const extractedText = await extractTextFromFile(filePath);
+  const summary = await summarizeText(extractedText);
+  const tags = await generateTags(extractedText);
+
+  await db.insert(evidence).values({
+    fileName: file.name,
+    fileType: file.type,
+    fileSize: file.size,
+    filePath: `/uploads/evidence/${uniqueFilename}`,
+    summary,
+    tags: JSON.stringify(tags),
+    originalContent: extractedText,
+    uploadDate: new Date(),
+    caseId: caseId ? parseInt(caseId.toString()) : null,
+    poiId: poiId ? parseInt(poiId.toString()) : null,
+  });
+
+  return new Response(JSON.stringify({ success: true }), { status: 201 });
+};

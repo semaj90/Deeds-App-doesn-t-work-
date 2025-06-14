@@ -1,53 +1,94 @@
 <script lang="ts">
-    import { enhance } from '$app/forms';
-    import { goto } from '$app/navigation';
+  import { enhance } from '$app/forms';
+  import { page } from '$app/stores';
+  import { onMount } from 'svelte';
 
-    let name = '';
-    let description = '';
-    let sectionNumber = '';
+  let code = '';
+  let title = '';
+  let description = '';
+  let tagsInput = ''; // Comma-separated string for tags
+  let aiSummary = '';
+  let formMessage = '';
+  let isSubmitting = false;
 
-    async function handleSubmit() {
-        const response = await fetch('/api/statutes', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ name, description, sectionNumber })
-        });
+  // Handle form submission
+  async function handleSubmit() {
+    isSubmitting = true;
+    formMessage = '';
 
-        if (response.ok) {
-            alert('Statute created successfully!');
-            goto('/statutes/manage');
-        } else {
-            const errorData = await response.json();
-            alert(`Failed to create statute: ${errorData.message || response.statusText}`);
-        }
+    const formData = new FormData();
+    formData.append('code', code);
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('tags', tagsInput); // Send as string, parse on server
+    formData.append('aiSummary', aiSummary);
+
+    const response = await fetch('/statutes/manage/new', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (response.ok) {
+      formMessage = 'Statute added successfully!';
+      // Clear form
+      code = '';
+      title = '';
+      description = '';
+      tagsInput = '';
+      aiSummary = '';
+    } else {
+      const errorData = await response.json();
+      formMessage = `Error: ${errorData.message || 'Failed to add statute.'}`;
     }
+    isSubmitting = false;
+  }
 </script>
 
-<svelte:head>
-    <title>WardenNet - New Statute</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-</svelte:head>
-
-<div class="container mt-4 text-dark">
-    <h1 class="mb-4 text-center text-primary">Add New Statute</h1>
-    <form on:submit|preventDefault={handleSubmit} use:enhance>
+<div class="container mt-4">
+  <div class="card bg-dark text-white">
+    <div class="card-header">
+      <h2 class="mb-0">Add New Statute</h2>
+    </div>
+    <div class="card-body">
+      <form on:submit|preventDefault={handleSubmit}>
         <div class="mb-3">
-            <label for="name" class="form-label">Statute Name</label>
-            <input type="text" class="form-control" id="name" name="name" bind:value={name} required />
+          <label for="code" class="form-label">Code</label>
+          <input type="text" class="form-control bg-secondary text-white border-dark" id="code" bind:value={code} required />
         </div>
-
         <div class="mb-3">
-            <label for="sectionNumber" class="form-label">Section Number</label>
-            <input type="text" class="form-control" id="sectionNumber" name="sectionNumber" bind:value={sectionNumber} required />
+          <label for="title" class="form-label">Title</label>
+          <input type="text" class="form-control bg-secondary text-white border-dark" id="title" bind:value={title} required />
         </div>
-
         <div class="mb-3">
-            <label for="description" class="form-label">Description (Optional)</label>
-            <textarea class="form-control" id="description" name="description" bind:value={description} rows="5"></textarea>
+          <label for="description" class="form-label">Description</label>
+          <textarea class="form-control bg-secondary text-white border-dark" id="description" rows="3" bind:value={description}></textarea>
         </div>
-
-        <button type="submit" class="btn btn-primary w-100">Add Statute</button>
-    </form>
+        <div class="mb-3">
+          <label for="tags" class="form-label">Tags (comma-separated)</label>
+          <input type="text" class="form-control bg-secondary text-white border-dark" id="tags" bind:value={tagsInput} placeholder="e.g., homicide, juvenile, felony" />
+        </div>
+        <div class="mb-3">
+          <label for="aiSummary" class="form-label">AI Summary</label>
+          <textarea class="form-control bg-secondary text-white border-dark" id="aiSummary" rows="5" bind:value={aiSummary}></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" disabled={isSubmitting}>
+          {#if isSubmitting}
+            Adding...
+          {:else}
+            Add Statute
+          {/if}
+        </button>
+        {#if formMessage}
+          <p class="mt-3 text-info">{formMessage}</p>
+        {/if}
+      </form>
+    </div>
+  </div>
 </div>
+
+<style>
+  .card {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+</style>

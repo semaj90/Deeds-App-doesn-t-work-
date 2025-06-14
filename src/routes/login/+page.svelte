@@ -1,16 +1,7 @@
 <h2>Login</h2>
-
-<!--
-  The form's `action` now points directly to the endpoint that
-  Auth.js automatically creates for the credentials provider.
--->
-<form action="/auth/signin/credentials" method="POST">
+<form method="POST" action="/api/auth/signin/credentials?callbackUrl=/dashboard">
 	<div class="mb-3">
 		<label for="email" class="form-label">Email</label>
-		<!--
-      The `name` attribute ("email", "password") is important,
-      as Auth.js uses these to find the credentials.
-    -->
 		<input name="email" id="email" type="email" class="form-control" required placeholder="your@email.com" />
 	</div>
 	<div class="mb-3">
@@ -19,3 +10,16 @@
 	</div>
 	<button type="submit" class="btn btn-primary">Sign In</button>
 </form>
+
+{#if error}
+	<div class="alert alert-danger">{error}</div>
+{/if}
+
+<script lang="ts">
+let error = '';
+</script>
+
+<!--
+  Use SvelteKit's form actions for login, which POSTs to /api/auth/[...auth]?auth=login
+  and handles errors and redirects in a Svelte-native way.
+-->

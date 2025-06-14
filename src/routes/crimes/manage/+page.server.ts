@@ -19,7 +19,7 @@ export const load: PageServerLoad = async (event) => { // Use event
     const offset = (page - 1) * limit; // url is available from event.url
 
     let query = db.select({
-        crime: crimes,
+        crime: crimes, // Keep this as it refers to the table alias
         criminal: criminals,
         statute: statutes
     })
@@ -37,10 +37,10 @@ export const load: PageServerLoad = async (event) => { // Use event
     if (searchTerm) {
         const searchPattern = `%${searchTerm.toLowerCase()}%`;
         query = query.where(
-            sql`${crimes.name} ILIKE ${searchPattern} OR ${crimes.description} ILIKE ${searchPattern} OR ${criminals.firstName} ILIKE ${searchPattern} OR ${criminals.lastName} ILIKE ${searchPattern} OR ${statutes.name} ILIKE ${searchPattern} OR ${statutes.sectionNumber} ILIKE ${searchPattern}`
+            sql`${criminals.name} ILIKE ${searchPattern} OR ${statutes.code} ILIKE ${searchPattern} OR ${statutes.title} ILIKE ${searchPattern}`
         );
         countQuery = countQuery.where(
-            sql`${crimes.name} ILIKE ${searchPattern} OR ${crimes.description} ILIKE ${searchPattern} OR ${criminals.firstName} ILIKE ${searchPattern} OR ${criminals.lastName} ILIKE ${searchPattern} OR ${statutes.name} ILIKE ${searchPattern} OR ${statutes.sectionNumber} ILIKE ${searchPattern}`
+            sql`${crimes.name} ILIKE ${searchPattern} OR ${crimes.description} ILIKE ${searchPattern} OR ${criminals.name} ILIKE ${searchPattern} OR ${statutes.title} ILIKE ${searchPattern} OR ${statutes.code} ILIKE ${searchPattern}`
         );
     }
 
@@ -57,7 +57,7 @@ export const load: PageServerLoad = async (event) => { // Use event
 
     return {
         userId: session.user.id, // Access id from session.user
-        username: session.user.username, // Access username from session.user
+        username: session.user.name, // Access name from session.user
         crimes: crimesWithDetails,
         currentPage: page,
         limit: limit,

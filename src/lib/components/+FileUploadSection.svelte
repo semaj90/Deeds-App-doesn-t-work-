@@ -1,13 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { UploadDropzone } from '@uploadthing/svelte';
-  import type { FileRouter } from '../../api/uploadthing/+server'; // Adjust path as needed
+  import type { OurFileRouter } from '$lib/uploadthing'; // Corrected import path
 
   let selectedFileType: string = 'PDF';
   let spreutChecked: boolean = false;
   let topuitionValue: string = '';
+
   let opticalCharacterRecognitionChecked: boolean = false;
-  let uploadedFiles: { name: string; url: string; type: string }[] = [];
+
 
   const fileTypes = ['PDF', 'DOCX', 'JPG', 'PNG', 'MP4', 'MP3']; // Added video/audio types
 

@@ -1,5 +1,5 @@
 // src/lib/server/db/seed.ts
-
+import 'dotenv/config';
 import { db } from './index'; // Use relative path for the db instance
 import { users } from './schema';
 // The import path now includes the .ts extension, which is required
@@ -37,14 +37,14 @@ async function seedDefaultUsers() {
 	await db.insert(users).values([
 		{
 			email: adminEmail,
-			password: adminPassword,
+			hashedPassword: adminPassword, // Changed to hashedPassword
 			role: 'admin',
 			name: 'Admin User',
 			id: 'user_admin01' // Example static ID
 		},
 		{
 			email: userEmail,
-			password: userPassword,
+			hashedPassword: userPassword, // Changed to hashedPassword
 			role: 'user',
 			name: 'Regular User',
 			id: 'user_regular01' // Example static ID

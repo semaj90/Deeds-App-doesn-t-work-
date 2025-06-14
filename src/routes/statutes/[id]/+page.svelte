@@ -32,7 +32,7 @@
   <div class="row">
     <!-- Main Content Area -->
     <div class="col-md-8">
-      <h1 class="mb-4">Statute: {statute.name} ({statute.sectionNumber})</h1>
+      <h1 class="mb-4">Statute: {statute.title} ({statute.code})</h1>
       <p class="lead">{statute.description}</p>
 
       <div class="card mb-4">

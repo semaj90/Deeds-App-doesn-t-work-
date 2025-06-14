@@ -16,19 +16,17 @@ export async function GET({ url }) {
     let countQuery = db.select({ count: sql`count(*)` }).from(criminals).$dynamic();
 
     if (searchTerm) {
+        console.log(`Search Term: ${searchTerm}`);
         const searchPattern = `%${searchTerm.toLowerCase()}%`;
+        console.log(`Search Pattern: ${searchPattern}`);
         query = query.where(
-            sql`${criminals.firstName} ILIKE ${searchPattern} OR ${criminals.lastName} ILIKE ${searchPattern} OR ${criminals.address} ILIKE ${searchPattern} OR ${criminals.email} ILIKE ${searchPattern}`
+            sql`${criminals.name} ILIKE ${searchPattern}`
         );
         countQuery = countQuery.where(
-            sql`${criminals.firstName} ILIKE ${searchPattern} OR ${criminals.lastName} ILIKE ${searchPattern} OR ${criminals.address} ILIKE ${searchPattern} OR ${criminals.email} ILIKE ${searchPattern}`
+            sql`${criminals.name} ILIKE ${searchPattern}`
         );
     }
 
-    if (filterStatus) {
-        query = query.where(eq(criminals.convictionStatus, filterStatus));
-        countQuery = countQuery.where(eq(criminals.convictionStatus, filterStatus));
-    }
 
     if (filterThreatLevel) {
         query = query.where(eq(criminals.threatLevel, filterThreatLevel));
@@ -44,38 +42,20 @@ export async function GET({ url }) {
 
 export async function POST({ request }) {
     const {
-        firstName,
-        lastName,
-        dateOfBirth,
-        address,
-        phone,
-        email,
-        photoUrl,
-        convictionStatus,
-        threatLevel,
-        sentenceLength,
-        convictionDate,
-        escapeAttempts,
-        gangAffiliations,
-        notes
+        name,
+        aliases,
+        priors,
+        convictions,
+        threatLevel
     } = await request.json();
 
     try {
         const newCriminal = await db.insert(criminals).values({
-            firstName,
-            lastName,
-            dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-            address,
-            phone,
-            email,
-            photoUrl,
-            convictionStatus,
-            threatLevel,
-            sentenceLength,
-            convictionDate: convictionDate ? new Date(convictionDate) : null,
-            escapeAttempts,
-            gangAffiliations,
-            notes
+            name,
+            aliases: aliases || [],
+            priors: priors || [],
+            convictions: convictions || [],
+            threatLevel
         }).returning();
         return json(newCriminal[0], { status: 201 });
     } catch (error) {
