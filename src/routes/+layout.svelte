@@ -1,10 +1,14 @@
 <script lang="ts">
+  import { page } from '$app/stores';
   import Header from '$lib/components/+Header.svelte';
+  import Sidebar from '$lib/components/+Sidebar.svelte';
   import { browser } from '$app/environment';
   import type { PageData } from './$types';
   import { userSessionStore } from '$lib/auth/userStore';
 
   export let data: PageData;
+
+  $: user = $page.data.session?.user;
 
   $: if (browser && data.user !== undefined) {
     if (data.user) {
@@ -37,8 +41,34 @@
   }
 </script>
 
-<Header user={data.user} />
+<div class="app-container">
+  {#if user}
+    <Header {user} />
+    <div class="main-content">
+      <Sidebar />
+      <main class="container-fluid py-4">
+        <slot />
+      </main>
+    </div>
+  {:else}
+    <slot />
+  {/if}
+</div>
 
-<main>
-  <slot />
-</main>
+<style>
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .main-content {
+    display: flex;
+    flex: 1;
+  }
+
+  main {
+    flex: 1;
+    padding: 2rem;
+  }
+</style>

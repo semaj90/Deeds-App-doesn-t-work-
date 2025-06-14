@@ -3,10 +3,17 @@ import { db } from '$lib/server/db';
 import { cases } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
-// GET /api/cases - List all cases
-export async function GET() {
+// GET /api/cases - List all cases, with optional search
+export async function GET({ url }) {
     try {
-        const allCases = await db.select().from(cases);
+        const search = url.searchParams.get('search')?.toLowerCase() || '';
+        let query = db.select().from(cases);
+        if (search) {
+            query = query.where(
+                (row) => row.title.toLowerCase().includes(search) || row.description.toLowerCase().includes(search)
+            );
+        }
+        const allCases = await query;
         return json(allCases);
     } catch (error) {
         console.error('Error fetching cases:', error);
@@ -15,40 +22,22 @@ export async function GET() {
 }
 
 // POST /api/cases - Create a new case
-export async function POST({ request }) {
-    const {
-        name,
-        title,
-        summary,
-        status,
-        dateOpened,
-        description,
-        verdict,
-        courtDates,
-        linkedCriminals,
-        linkedCrimes,
-        notes,
-        userId // Assuming userId is passed from frontend or derived from session
-    } = await request.json();
-
-    if (!name || !title || !status || !dateOpened || !userId) {
-        return json({ message: 'Name, title, status, date opened, and user ID are required' }, { status: 400 });
+export async function POST({ request, locals }) {
+    const { title, description, dangerScore, status, aiSummary } = await request.json();
+    const userId = locals.session?.user?.id;
+    if (!userId || !title || !description) {
+        return json({ message: 'Title, description, and user ID are required' }, { status: 400 });
     }
-
     try {
+        const id = crypto.randomUUID();
         const newCase = await db.insert(cases).values({
-            name,
+            id,
             title,
-            summary,
-            status,
-            dateOpened: dateOpened ? new Date(dateOpened) : undefined, // Pass undefined to let defaultNow() take effect if not provided
             description,
-            verdict,
-            courtDates,
-            linkedCriminals,
-            linkedCrimes,
-            notes,
-            userId
+            dangerScore: dangerScore || 0,
+            status: status || 'open',
+            aiSummary: aiSummary || null,
+            createdBy: userId
         }).returning();
         return json(newCase[0], { status: 201 });
     } catch (error) {

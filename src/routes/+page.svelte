@@ -197,16 +197,19 @@
             </div>
 
             <h2 class="mt-5 mb-4 text-dark">Recent Cases</h2>
+            <form class="mb-3" on:submit|preventDefault={() => goto('/cases/new')}>
+                <button class="btn btn-success">Create New Case</button>
+            </form>
+            <input type="text" class="form-control mb-3" placeholder="Search cases..." bind:value={searchTerm} on:input={() => goto(`/?search=${encodeURIComponent(searchTerm)}`)} />
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                 {#each cases as caseItem (caseItem.id)}
                     <div class="col">
-                        <div class="card h-100 shadow-sm">
+                        <div class="card h-100 shadow-sm clickable" on:click={() => goto(`/case/${caseItem.id}`)} style="cursor:pointer;">
                             <div class="card-body">
-                                <h5 class="card-title text-primary">{caseItem.name}</h5>
-                                <p class="card-text"><strong>Title:</strong> {caseItem.title}</p>
+                                <h5 class="card-title text-primary">{caseItem.title}</h5>
                                 <p class="card-text"><strong>Status:</strong> {caseItem.status}</p>
-                                <p class="card-text"><strong>Opened:</strong> {new Date(caseItem.dateOpened).toLocaleDateString()}</p>
-                                <a href="/case/{caseItem.id}" class="btn btn-info btn-sm">View Details</a>
+                                <p class="card-text"><strong>Opened:</strong> {caseItem.createdAt ? new Date(caseItem.createdAt).toLocaleDateString() : 'N/A'}</p>
+                                <p class="card-text">{caseItem.description}</p>
                             </div>
                         </div>
                     </div>

@@ -16,10 +16,10 @@ export async function GET({ url }) {
     if (searchTerm) {
         const searchPattern = `%${searchTerm.toLowerCase()}%`;
         query = query.where(
-            sql`${statutes.name} ILIKE ${searchPattern} OR ${statutes.description} ILIKE ${searchPattern} OR ${statutes.sectionNumber} ILIKE ${searchPattern}`
+            sql`${statutes.title} ILIKE ${searchPattern} OR ${statutes.description} ILIKE ${searchPattern} OR ${statutes.code} ILIKE ${searchPattern}`
         );
         countQuery = countQuery.where(
-            sql`${statutes.name} ILIKE ${searchPattern} OR ${statutes.description} ILIKE ${searchPattern} OR ${statutes.sectionNumber} ILIKE ${searchPattern}`
+            sql`${statutes.title} ILIKE ${searchPattern} OR ${statutes.description} ILIKE ${searchPattern} OR ${statutes.code} ILIKE ${searchPattern}`
         );
     }
 
@@ -31,17 +31,17 @@ export async function GET({ url }) {
 }
 
 export async function POST({ request }) {
-    const { name, description, sectionNumber } = await request.json();
+    const { title, description, code } = await request.json();
 
-    if (!name || !sectionNumber) {
-        return json({ message: 'Name and section number are required' }, { status: 400 });
+    if (!title || !code) {
+        return json({ message: 'Title and code are required' }, { status: 400 });
     }
 
     try {
         const newStatute = await db.insert(statutes).values({
-            name,
+            title,
             description,
-            sectionNumber
+            code
         }).returning();
         return json(newStatute[0], { status: 201 });
     } catch (error) {

@@ -2,13 +2,17 @@
     import { page } from '$app/stores';
     import { goto } from '$app/navigation';
     import type { PageData } from './$types';
-    import type { Criminal } from '$lib/data/types';
+    import type { Criminal, Evidence } from '$lib/data/types';
     import { invoke } from '@tauri-apps/api/tauri';
+    import FileUploadSection from '$lib/components/+FileUploadSection.svelte';
 
-    export let data: PageData;
+    export let data: { criminal: Criminal; evidence: Evidence[] };
 
     let criminalItem: Criminal = data.criminal;
     let showDeleteConfirmation = false;
+    let activeTab = 'profile';
+    let editMode = false;
+    let uploadingPhoto = false;
 
     function goToEdit() {
         if (criminalItem && criminalItem.id) {
@@ -28,6 +32,31 @@
             alert(`An error occurred while trying to delete the criminal: ${error}`);
         } finally {
             showDeleteConfirmation = false;
+        }
+    }
+
+    async function handlePhotoUpload(event: Event) {
+        const input = event.target as HTMLInputElement;
+        if (!input.files?.length) return;
+
+        const formData = new FormData();
+        formData.append('photo', input.files[0]);
+        formData.append('criminalId', data.criminal.id.toString());
+
+        uploadingPhoto = true;
+        try {
+            const response = await fetch(`/api/criminals/${data.criminal.id}/photo`, {
+                method: 'POST',
+                body: formData
+            });
+            if (response.ok) {
+                const result = await response.json();
+                data.criminal.photoUrl = result.photoUrl;
+            }
+        } catch (error) {
+            console.error('Error uploading photo:', error);
+        } finally {
+            uploadingPhoto = false;
         }
     }
 </script>
@@ -75,6 +104,101 @@
             </div>
         </div>
     {/if}
+
+    <div class="row">
+        <!-- Left sidebar with photo -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    {#if data.criminal.photoUrl}
+                        <img src={data.criminal.photoUrl} alt="Criminal photo" class="img-fluid rounded mb-3" />
+                    {:else}
+                        <div class="placeholder-image mb-3">No Photo</div>
+                    {/if}
+                    <input type="file" accept="image/*" on:change={handlePhotoUpload} class="d-none" id="photoUpload" />
+                    <button class="btn btn-primary btn-sm" on:click={() => document.getElementById('photoUpload')?.click()}>
+                        {uploadingPhoto ? 'Uploading...' : 'Upload Photo'}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs">
+                        <li class="nav-item">
+                            <button class="nav-link" class:active={activeTab === 'profile'} on:click={() => activeTab = 'profile'}>
+                                Profile
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" class:active={activeTab === 'evidence'} on:click={() => activeTab = 'evidence'}>
+                                Evidence
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" class:active={activeTab === 'analysis'} on:click={() => activeTab = 'analysis'}>
+                                AI Analysis
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-body">
+                    {#if activeTab === 'profile'}
+                        <!-- Profile content -->
+                        <div class="profile-section">
+                            <h3>{data.criminal.firstName} {data.criminal.lastName}</h3>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Date of Birth:</strong> {data.criminal.dateOfBirth}</p>
+                                    <p><strong>Address:</strong> {data.criminal.address}</p>
+                                    <p><strong>Email:</strong> {data.criminal.email}</p>
+                                    <p><strong>Phone:</strong> {data.criminal.phone}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h4>Aliases</h4>
+                                    <ul>
+                                        {#each data.criminal.aliases as alias}
+                                            <li>{alias}</li>
+                                        {/each}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    {:else if activeTab === 'evidence'}
+                        <!-- Evidence section -->
+                        <FileUploadSection criminalId={data.criminal.id} />
+                        <div class="evidence-list mt-4">
+                            {#each data.evidence as item}
+                                <div class="evidence-item card mb-2">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{item.title}</h5>
+                                        <p class="card-text">{item.description}</p>
+                                        <div class="tags">
+                                            {#each item.tags as tag}
+                                                <span class="badge bg-secondary me-1">{tag}</span>
+                                            {/each}
+                                        </div>
+                                    </div>
+                                </div>
+                            {/each}
+                        </div>
+                    {:else if activeTab === 'analysis'}
+                        <!-- AI Analysis section -->
+                        <div class="analysis-section">
+                            <h4>AI Analysis Results</h4>
+                            <pre class="bg-light p-3 rounded">
+                                {JSON.stringify(data.criminal.aiAnalysis, null, 2)}
+                            </pre>
+                        </div>
+                    {/if}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -173,5 +297,15 @@
         border-top: 1px solid var(--border-color);
         padding-top: 10px;
         margin-top: 15px;
+    }
+
+    .placeholder-image {
+        width: 200px;
+        height: 200px;
+        background-color: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
     }
 </style>

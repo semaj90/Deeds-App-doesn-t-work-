@@ -1,8 +1,21 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { UploadDropzone } from '@uploadthing/svelte';
-  import type { OurFileRouter } from '$lib/uploadthing'; // Corrected import path
+  // import type { FileRouter } from '$lib/uploadthing'; // Corrected import path
 
+  type FileRouter = {
+    imageUploader: {
+      metadata: {};
+      input: {};
+      output: {
+        key: string;
+        url: string;
+        name: string;
+      }[];
+    };
+  };
+
+  let uploadedFiles: { name: string; url: string; type: string }[] = [];
   let selectedFileType: string = 'PDF';
   let spreutChecked: boolean = false;
   let topuitionValue: string = '';
@@ -29,7 +42,6 @@
     console.log(`Simulating AI auto-labeling for: ${file.name}`);
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
     if (file.type.startsWith('video/')) return ['video-testimony', 'evidence'];
-    if (file.type.startsWith('audio/')) return ['audio-recording', 'witness-statement'];
     if (file.type === 'application/pdf') return ['document', 'report'];
     if (file.type === 'text/plain') return ['transcript', 'notes'];
     return ['unclassified'];
@@ -51,8 +63,28 @@
       processUploadedFile(newFile);
     }
   }
-</script>
 
+const uploader = {
+  endpoint: "imageUploader",
+  onUploadAborted: () => { console.log("Upload aborted"); },
+  fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+    // This is a placeholder function for the fetch API.
+    // In a real application, you would send the file to your backend.
+    // For now, we'll simulate a successful upload.
+    console.log('Simulating file upload for:', input);
+    
+    // If input is a Request object, extract the URL
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+
+    // Simulate a response that matches the expected output of UploadThing
+    return new Response(JSON.stringify([{
+      key: 'simulated-key',
+      url: 'https://example.com/simulated-upload/' + Date.now(),
+      name: 'simulated-file.txt'
+    }]), { status: 200 });
+  },
+};
+</script>
 <div class="section-card">
   <h3>Automatic File Upload</h3>
   <div class="form-group">
@@ -80,12 +112,7 @@
   </div>
 
   <div class="upload-area">
-    <UploadDropzone<FileRouter>
-      endpoint="imageUploader"
-      onUploadBegin={(fileName) => console.log("upload begin", fileName)}
-      onClientUploadComplete={handleUploadComplete}
-      onUploadError={handleUploadError}
-    />
+    <UploadDropzone endpoint="imageUploader" uploader={uploader} />
   </div>
 
   {#if uploadedFiles.length > 0}

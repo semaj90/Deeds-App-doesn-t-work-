@@ -1,13 +1,13 @@
-import { pgTable, varchar, text, jsonb, timestamp, integer, primaryKey } from 'drizzle-orm/pg-core'; // Added primaryKey
+import { pgTable, serial, text, varchar, integer, jsonb, timestamp, primaryKey } from 'drizzle-orm/pg-core';
 
-// Users with roles and bcrypt-hashed passwords
-export const users = pgTable('users', { // Renamed table to 'users' for Auth.js compatibility
+// Auth.js compatible users table
+export const users = pgTable('users', {
   id: text('id').notNull().primaryKey(),
   name: text('name'),
-  email: text('email').notNull().unique(), // Added unique constraint
+  email: text('email').notNull().unique(),
   emailVerified: timestamp('emailVerified', { mode: 'date' }),
   image: text('image'),
-  hashedPassword: text('hashed_password'), // Keep this for credentials provider
+  hashedPassword: text('hashed_password'),
   role: varchar('role', { length: 50 }).notNull().default('user'),
   createdAt: timestamp('created_at').defaultNow(),
 });
@@ -58,53 +58,63 @@ export const verificationTokens = pgTable(
 
 // Criminals (POIs)
 export const criminals = pgTable('criminals', {
-  id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
+  id: integer('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
-  aliases: jsonb('aliases').notNull().default('[]'), // array of strings
-  priors: jsonb('priors').notNull().default('[]'),   // array of { date, crime, outcome }
-  convictions: jsonb('convictions').notNull().default('[]'), // same structure
-  threatLevel: varchar('threat_level', { length: 20 }), // e.g. 'Low', 'Medium', etc.
+  firstName: varchar('first_name', { length: 128 }).notNull(),
+  lastName: varchar('last_name', { length: 128 }).notNull(),
+  photoUrl: text('photo_url'),
+  dateOfBirth: timestamp('date_of_birth', { mode: 'date' }),
+  address: varchar('address', { length: 255 }),
+  email: varchar('email', { length: 255 }),
+  phone: varchar('phone', { length: 50 }),
+  aliases: jsonb('aliases').notNull().default('[]'),
+  priors: jsonb('priors').notNull().default('[]'),
+  convictions: jsonb('convictions').notNull().default('[]'),
+  threatLevel: varchar('threat_level', { length: 20 }),
+  aiAnalysis: jsonb('ai_analysis').default('{}'),
+  notes: text('notes'),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Evidence table
 export const evidence = pgTable('evidence', {
-  id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
-  caseId: integer('case_id').references(() => cases.id),
-  poiId: integer('poi_id').references(() => criminals.id),
-  fileName: varchar('file_name', { length: 255 }).notNull(),
+  id: integer('id').primaryKey(),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  fileUrl: text('file_url').notNull(),
   fileType: varchar('file_type', { length: 50 }).notNull(),
   fileSize: integer('file_size').notNull(),
-  uploadDate: timestamp('upload_date').defaultNow(),
-  filePath: text('file_path').notNull(),
-  summary: text('summary'),
-  tags: jsonb('tags').notNull().default('[]'),
-  originalContent: text('original_content'),
+  criminalId: integer('criminal_id').references(() => criminals.id),
+  caseId: integer('case_id').references(() => cases.id),
+  aiSummary: text('ai_summary'),
+  tags: jsonb('tags').default('[]'),
+  uploadedAt: timestamp('uploaded_at').defaultNow(),
+  uploadedBy: text('uploaded_by').references(() => users.id),
 });
 
 // Cases
 export const cases = pgTable('cases', {
-  id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
+  id: varchar('id', { length: 36 }).primaryKey(),
   title: varchar('title', { length: 255 }).notNull(),
   description: text('description').notNull(),
   dangerScore: integer('danger_score').default(0),
   aiSummary: text('ai_summary'),
   createdAt: timestamp('created_at').defaultNow(),
   status: varchar('status', { length: 50 }).notNull().default('open'),
+  createdBy: text('created_by').references(() => users.id), // Add prosecutor/user reference
 });
 
 // Content Embeddings stored separately in Qdrant but indexed here for ref
 export const contentEmbeddings = pgTable('content_embeddings', {
-  id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
+  id: integer('id').primaryKey(),
   contentId: integer('content_id').notNull(), // references evidence.id or lawParagraphs.id
   contentType: varchar('content_type', { length: 50 }).notNull(), // 'evidence' or 'law_paragraph'
-  // Store embedding vector as binary or float array, if you want here; but better to keep in Qdrant
-  // For example:
-  embedding: text('embedding'), // Storing as text for now, actual vector in Qdrant
+  embedding: text('embedding'),
 });
 
 export const statutes = pgTable('statutes', {
-  id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
+  id: integer('id').primaryKey(),
   code: varchar('code', { length: 255 }).notNull().unique(),
   title: varchar('title', { length: 255 }).notNull(),
   description: text('description'),
@@ -114,10 +124,37 @@ export const statutes = pgTable('statutes', {
 });
 
 export const crimes = pgTable('crimes', {
-  id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
+  id: integer('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
   criminalId: integer('criminal_id').references(() => criminals.id),
   statuteId: integer('statute_id').references(() => statutes.id),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+// Add joining tables for evidence-case relationships
+export const caseEvidence = pgTable('case_evidence', {
+  id: integer('id').primaryKey(),
+  caseId: text('case_id').references(() => cases.id),
+  evidenceId: integer('evidence_id').references(() => evidence.id),
+  addedAt: timestamp('added_at').defaultNow(),
+  addedBy: text('added_by').references(() => users.id),
+});
+
+// Add tags table for evidence and cases
+export const tags = pgTable('tags', {
+  id: integer('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  category: text('category'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const evidenceTags = pgTable('evidence_tags', {
+  evidenceId: integer('evidence_id').references(() => evidence.id),
+  tagId: integer('tag_id').references(() => tags.id),
+  assignedAt: timestamp('assigned_at').defaultNow(),
+  assignedBy: text('assigned_by').references(() => users.id),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.evidenceId, table.tagId] }),
+}));
+

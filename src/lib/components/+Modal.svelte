@@ -86,3 +86,13 @@
     flex-grow: 1; /* Allow body to take available space */
   }
 </style>
+
+<div
+  role="button"
+  tabindex="0"
+  on:click={close}
+  on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') close(); }}
+  aria-label="Close modal"
+>
+  <!-- Modal content here -->
+</div>

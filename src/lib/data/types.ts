@@ -4,13 +4,24 @@ import { cases, criminals, statutes, users } from '$lib/server/db/schema';
 export type Case = InferSelectModel<typeof cases>;
 export type NewCase = InferInsertModel<typeof cases>;
 
-export type Criminal = InferSelectModel<typeof criminals>;
-export type NewCriminal = InferInsertModel<typeof criminals>;
+export type Criminal = Omit<InferSelectModel<typeof criminals>, 'name'> & {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: Date | null;
+  address: string | null;
+  email: string | null;
+};
+export type NewCriminal = Omit<InferInsertModel<typeof criminals>, 'name'> & {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: Date | null;
+  address: string | null;
+  email: string | null;
+};
 
 export type Statute = InferSelectModel<typeof statutes>;
-// Assuming 'Crime' is a custom type not directly from Drizzle schema, or it needs to be defined.
-// For now, I will comment it out as it's causing an error and not defined in schema.ts
-// export type Crime = DB_Crime;
+
+export type Crime = InferSelectModel<typeof crimes>;
 
 export type User = InferSelectModel<typeof users>;
 

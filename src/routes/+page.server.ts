@@ -20,8 +20,10 @@ export const load: ServerLoad = async ({ url, fetch }) => {
         const data = await criminalResponse.json();
         criminals = data.criminals;
         totalCriminals = data.totalCriminals;
+        console.log('[+page.server.ts] Successfully fetched criminals.');
     } else {
-        console.error('Failed to fetch criminals:', criminalResponse.status, criminalResponse.statusText);
+        console.error('[+page.server.ts] Failed to fetch criminals:', criminalResponse.status, criminalResponse.statusText);
+        console.error('[+page.server.ts] Criminals API response:', await criminalResponse.text());
     }
 
     // Fetch recent cases (e.g., last 5, or all if few)
@@ -29,8 +31,10 @@ export const load: ServerLoad = async ({ url, fetch }) => {
     let cases: Case[] = [];
     if (caseResponse.ok) {
         cases = await caseResponse.json();
+        console.log('[+page.server.ts] Successfully fetched cases.');
     } else {
-        console.error('Failed to fetch cases:', caseResponse.status, caseResponse.statusText);
+        console.error('[+page.server.ts] Failed to fetch cases:', caseResponse.status, caseResponse.statusText);
+        console.error('[+page.server.ts] Cases API response:', await caseResponse.text());
     }
 
     return {

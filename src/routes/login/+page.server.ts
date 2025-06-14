@@ -1,43 +1,40 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { users, sessions } from '$lib/server/db/schema';
-import { verifyPassword } from '$lib/server/authUtils';
-import { eq } from 'drizzle-orm';
+import type { Actions, PageServerLoad } from './$types';
 
-export const actions = {
-	default: async ({ request, cookies }) => {
-		const form = await request.formData();
-		const email = form.get('email') as string;
-		const password = form.get('password') as string;
+export const load: PageServerLoad = async ({ locals }) => {
+    if (locals.session?.user) {
+        throw redirect(302, '/dashboard');
+    }
+    return {};
+};
 
-		if (!email || !password) {
-			return fail(400, { error: 'Email and password are required.' });
-		}
+export const actions: Actions = {
+    default: async ({ request, url, locals: { auth } }) => {
+        const form = await request.formData();
+        const email = form.get('email')?.toString();
+        const password = form.get('password')?.toString();
 
-		const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-		if (!user || !user.hashedPassword) {
-			return fail(401, { error: 'Invalid credentials' });
-		}
+        if (!email || !password) {
+            return fail(400, { error: 'Missing email or password' });
+        }
 
-		const valid = await verifyPassword(password, user.hashedPassword);
-		if (!valid) {
-			return fail(401, { error: 'Invalid credentials' });
-		}
+        try {
+            const result = await auth.signIn('credentials', {
+                email,
+                password,
+                redirectTo: url.searchParams.get('from') || '/dashboard'
+            });
 
-		const sessionToken = crypto.randomUUID();
-		const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7); // 7 days
-		await db.insert(sessions).values({
-			sessionToken,
-			userId: user.id,
-			expires,
-		});
-		cookies.set('session', sessionToken, {
-			path: '/',
-			httpOnly: true,
-			maxAge: 60 * 60 * 24 * 7,
-			secure: process.env.NODE_ENV === 'production',
-			sameSite: 'lax',
-		});
-		throw redirect(303, '/dashboard');
-	}
+            if (!result?.ok) {
+                return fail(401, {
+                    error: 'Invalid credentials'
+                });
+            }
+        } catch (e) {
+            console.error('Login error:', e);
+            return fail(500, {
+                error: 'Server error during login'
+            });
+        }
+    }
 };

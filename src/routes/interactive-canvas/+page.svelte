@@ -4,10 +4,15 @@
   import FileUploadSection from '$lib/components/+FileUploadSection.svelte';
   import AutomateUploadSection from '$lib/components/+AutomateUploadSection.svelte';
   import AddNotesSection from '$lib/components/+AddNotesSection.svelte';
+  interface PageData {
+    user: any;
+  }
+
+  export let data: PageData;
 </script>
 
 <div class="interactive-canvas-layout">
-  <Header />
+  <Header user={data.user} />
   <Sidebar />
   <main class="main-content">
     <div class="content-grid">

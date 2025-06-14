@@ -38,8 +38,10 @@
 </script>
 
 <div
-  on:drop={handleDrop}
+  role="region"
+  aria-label="Evidence drop area"
   on:dragover={handleDragOver}
+  on:drop={handleDrop}
   style="border: 2px dashed #666; padding: 2rem; text-align: center;"
 >
   Drag and drop evidence files here or click to select

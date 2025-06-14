@@ -1,9 +1,12 @@
 import type { PageLoad } from './$types';
 import type { Criminal } from '$lib/data/types';
 
-export const load: PageLoad = async ({ parent }) => {
-    const { criminals } = await parent();
+import { db } from '$lib/server/db';
+import { criminals } from '$lib/server/db/schema';
+
+export const load: PageLoad = async () => {
+    const allCriminals = await db.select().from(criminals);
     return {
-        criminals: criminals as Criminal[]
+        criminals: allCriminals as Criminal[]
     };
 };
