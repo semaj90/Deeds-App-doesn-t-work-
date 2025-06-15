@@ -1,5 +1,5 @@
 console.log('[db/index.ts] File started processing.');
-import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/node-postgres';
+import { drizzle } from 'drizzle-orm/node-postgres'; // Fixed: removed PostgresJsDatabase import
 import { Pool } from 'pg';
 import * as schema from './schema';
 import 'dotenv/config'; // Load .env file for standalone scripts

@@ -28,23 +28,6 @@ ADD COLUMN IF NOT EXISTS uploaded_at timestamp DEFAULT now(),
 ADD COLUMN IF NOT EXISTS uploaded_by text;
 
 -- Add foreign key constraints for evidence table (if not already present)
-DO $$ BEGIN
-    ALTER TABLE evidence ADD CONSTRAINT evidence_criminal_id_criminals_id_fk FOREIGN KEY (criminal_id) REFERENCES criminals(id) ON DELETE NO ACTION ON UPDATE NO ACTION;
-EXCEPTION
-    WHEN duplicate_object THEN NULL;
-END $$;
-
-DO $$ BEGIN
-    ALTER TABLE evidence ADD CONSTRAINT evidence_case_id_cases_id_fk FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE NO ACTION ON UPDATE NO ACTION;
-EXCEPTION
-    WHEN duplicate_object THEN NULL;
-END $$;
-
-DO $$ BEGIN
-    ALTER TABLE evidence ADD CONSTRAINT evidence_uploaded_by_users_id_fk FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE NO ACTION ON UPDATE NO ACTION;
-EXCEPTION
-    WHEN duplicate_object THEN NULL;
-END $$;
 
 -- Alter cases table
 ALTER TABLE cases
@@ -53,11 +36,6 @@ ADD COLUMN IF NOT EXISTS created_by text,
 ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now();
 
 -- Add foreign key constraint for cases table (if not already present)
-DO $$ BEGIN
-    ALTER TABLE cases ADD CONSTRAINT cases_created_by_users_id_fk FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE NO ACTION ON UPDATE NO ACTION;
-EXCEPTION
-    WHEN duplicate_object THEN NULL;
-END $$;
 
 -- Create content_embeddings table
 CREATE TABLE IF NOT EXISTS content_embeddings (

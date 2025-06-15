@@ -2,6 +2,7 @@
     import { session } from '$lib/auth/userStore';
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
+    import { onMount } from 'svelte';
     import CaseCard from '$lib/components/+CaseCard.svelte';
     import type { PageData } from './$types';
 
@@ -10,6 +11,13 @@
     $: if (!$session?.user) {
         goto('/login');
     }
+
+    // Redirect to /account if on /dashboard
+    onMount(() => {
+        if ($page.url.pathname === '/dashboard') {
+            goto('/account');
+        }
+    });
 
     let files: FileList;
     let uploadMessage = '';
@@ -50,19 +58,6 @@
             uploadError = error.message || 'An unexpected error occurred during upload.';
         }
     }
-</script>
-
-<script lang="ts">
-  import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
-  import { onMount } from 'svelte';
-
-  // Redirect to /account if on /dashboard
-  onMount(() => {
-    if ($page.url.pathname === '/dashboard') {
-      goto('/account');
-    }
-  });
 </script>
 
 <div class="container mt-5">

@@ -31,28 +31,19 @@ function processSqlFiles(dir: string) {
         }
         return match;
       });
-// Remove duplicate PRIMARY KEY constraints from CREATE TABLE if already present
-content = content.replace(/,?\s*CONSTRAINT\s+"?(\w+)"?\s+PRIMARY KEY\s*\([^)]+\)/g, (match) => {
-  // Remove the constraint from CREATE TABLE, will be added as ALTER TABLE if needed
-  return '';
-});
 
-// Add IF NOT EXISTS to ALTER TABLE ADD CONSTRAINT
-content = content.replace(/(ALTER TABLE\s+"?\w+"?\s+ADD CONSTRAINT\s+"?\w+"?\s+FOREIGN KEY\s*\([^)]+\)\s+REFERENCES\s+"?\w+"?\s*\([^)]+\)(?:\s+ON DELETE\s+\w+)?(?:\s+ON UPDATE\s+\w+)?);/g, (match, constraintStatement) => {
-  return `DO $$ BEGIN ${constraintStatement} IF NOT EXISTS; EXCEPTION WHEN duplicate_object THEN NULL; END $$;`;
-});
+      // Remove duplicate PRIMARY KEY constraints from CREATE TABLE if already present
+      content = content.replace(/,?\s*CONSTRAINT\s+"?(\w+)"?\s+PRIMARY KEY\s*\([^)]+\)/g, (match) => {
+        // Remove the constraint from CREATE TABLE, will be added as ALTER TABLE if needed
+        return '';
+      });
 
-// Add IF EXISTS to ALTER TABLE DROP CONSTRAINT
-content = content.replace(/(ALTER TABLE\s+"?\w+"?\s+DROP CONSTRAINT\s+"?\w+"?);/g, (match, constraintStatement) => {
-  return `DO $$ BEGIN EXECUTE '${constraintStatement} IF EXISTS'; EXCEPTION WHEN undefined_object THEN NULL; END $$;`;
-});
-
-fs.writeFileSync(filePath, content);
-console.log(`✅ Patched ${filePath}`);
+      fs.writeFileSync(filePath, content);
+      console.log(`✅ Patched ${filePath}`);
+    }
+  });
 }
-});
-}
- 
+
 if (fs.existsSync(drizzleDir)) {
   processSqlFiles(drizzleDir);
 } else {
