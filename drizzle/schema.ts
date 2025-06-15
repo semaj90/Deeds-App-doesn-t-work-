@@ -237,3 +237,123 @@ export const account = pgTable("account", {
 		}).onDelete("cascade"),
 	primaryKey({ columns: [table.provider, table.providerAccountId], name: "account_provider_providerAccountId_pk"}),
 ]);
+
+// ============ NEW TABLES FOR ENHANCED PROSECUTOR CASE MANAGEMENT ============
+
+// Junction table for cases and criminals (many-to-many relationship)
+export const caseCriminals = pgTable("case_criminals", {
+	id: text().primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+	caseId: varchar("case_id", { length: 36 }).notNull(),
+	criminalId: integer("criminal_id").notNull(),
+	role: varchar({ length: 100 }), // 'suspect', 'victim', 'witness', etc.
+	involvement: text(), // Description of how they're involved
+	addedAt: timestamp("added_at", { mode: 'string' }).defaultNow(),
+	addedBy: text("added_by"),
+}, (table) => [
+	foreignKey({
+		columns: [table.caseId],
+		foreignColumns: [cases.id],
+		name: "case_criminals_case_id_fk"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.criminalId],
+		foreignColumns: [criminals.id],
+		name: "case_criminals_criminal_id_fk"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.addedBy],
+		foreignColumns: [users.id],
+		name: "case_criminals_added_by_fk"
+	}),
+	unique("case_criminals_unique").on(table.caseId, table.criminalId),
+]);
+
+// Track case activities/events for audit trail
+export const caseActivities = pgTable("case_activities", {
+	id: text().primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+	caseId: varchar("case_id", { length: 36 }).notNull(),
+	activityType: varchar("activity_type", { length: 50 }).notNull(), // 'evidence_added', 'criminal_linked', 'status_changed', etc.
+	description: text().notNull(),
+	metadata: jsonb().default({}), // Store additional data like old/new values
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	createdBy: text("created_by"),
+}, (table) => [
+	foreignKey({
+		columns: [table.caseId],
+		foreignColumns: [cases.id],
+		name: "case_activities_case_id_fk"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.createdBy],
+		foreignColumns: [users.id],
+		name: "case_activities_created_by_fk"
+	}),
+]);
+
+// Enhanced prosecutor profiles for user management
+export const prosecutorProfiles = pgTable("prosecutor_profiles", {
+	id: text().primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+	userId: text("user_id").notNull(),
+	badgeNumber: varchar("badge_number", { length: 50 }),
+	department: varchar({ length: 200 }),
+	jurisdiction: varchar({ length: 200 }),
+	specializations: jsonb().default([]), // Array of specialization areas like 'homicide', 'fraud', etc.
+	caseStats: jsonb("case_stats").default({}), // Statistics about solved cases, conviction rates, etc.
+	preferences: jsonb().default({}), // UI preferences, notification settings, etc.
+	isActive: integer("is_active").default(1), // 1 for active, 0 for inactive
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	foreignKey({
+		columns: [table.userId],
+		foreignColumns: [users.id],
+		name: "prosecutor_profiles_user_id_fk"
+	}).onDelete("cascade"),
+	unique("prosecutor_profiles_user_unique").on(table.userId),
+	unique("prosecutor_profiles_badge_unique").on(table.badgeNumber),
+]);
+
+// Evidence annotations for AI tagging and analysis
+export const evidenceAnnotations = pgTable("evidence_annotations", {
+	id: text().primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+	evidenceId: integer("evidence_id").notNull(),
+	annotationType: varchar("annotation_type", { length: 50 }).notNull(), // 'ai_tag', 'manual_note', 'highlight', etc.
+	content: text().notNull(),
+	confidence: integer().default(0), // For AI annotations, confidence score 0-100
+	position: jsonb().default({}), // For visual annotations on images/documents
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	createdBy: text("created_by"), // null for AI-generated annotations
+}, (table) => [
+	foreignKey({
+		columns: [table.evidenceId],
+		foreignColumns: [evidence.id],
+		name: "evidence_annotations_evidence_id_fk"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.createdBy],
+		foreignColumns: [users.id],
+		name: "evidence_annotations_created_by_fk"
+	}),
+]);
+
+// Case canvas for drag-and-drop evidence organization
+export const caseCanvas = pgTable("case_canvas", {
+	id: text().primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+	caseId: varchar("case_id", { length: 36 }).notNull(),
+	canvasData: jsonb().default({}), // Stores the canvas layout, connections, positions
+	version: integer().default(1), // For version control of canvas layouts
+	isActive: integer("is_active").default(1), // Current active version
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	createdBy: text("created_by"),
+}, (table) => [
+	foreignKey({
+		columns: [table.caseId],
+		foreignColumns: [cases.id],
+		name: "case_canvas_case_id_fk"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.createdBy],
+		foreignColumns: [users.id],
+		name: "case_canvas_created_by_fk"
+	}),
+]);
