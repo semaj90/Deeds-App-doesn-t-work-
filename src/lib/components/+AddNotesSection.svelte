@@ -1,91 +1,127 @@
 <script lang="ts">
-  // Logic for add notes section
-  let selectedStrew: string = 'Strew';
-  let selectedIndow: string = 'Indow';
-  let opticalCtaraderRecognittionChecked: boolean = false;
-  let audeMuesChecked: boolean = false;
-  let videonValue: string = '';
+  import { createEventDispatcher } from 'svelte';
 
-  const strewOptions = ['Strew', 'Option 1', 'Option 2']; // Example options
-  const indowOptions = ['Indow', 'Option A', 'Option B']; // Example options
+  const dispatch = createEventDispatcher();
+
+  let notesContent: string = '';
+  let selectedCaseForNotes: string = ''; // Assuming notes can be linked to a case
+  let selectedPoiForNotes: string = ''; // Assuming notes can be linked to a POI
+
+  // Dummy data for dropdowns - replace with actual data fetched from API
+  const caseOptions = [
+    { value: 'case1', label: 'Case 2023-001' },
+    { value: 'case2', label: 'Case 2023-002' },
+    { value: 'case3', label: 'Case 2023-003' },
+  ];
+
+  const poiOptions = [
+    { value: 'poi1', label: 'John Doe' },
+    { value: 'poi2', label: 'Jane Smith' },
+    { value: 'poi3', label: 'Criminal X' },
+  ];
+
+  const handleSubmit = async () => {
+    // In a real application, you would send this data to your backend API
+    // For now, we'll just log it and dispatch an event.
+    console.log('Add Notes Data:', {
+      notesContent,
+      selectedCaseForNotes,
+      selectedPoiForNotes,
+    });
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    alert('Notes saved successfully!');
+    dispatch('notesSaved');
+
+    // Reset form
+    notesContent = '';
+    selectedCaseForNotes = '';
+    selectedPoiForNotes = '';
+  };
 </script>
 
-<div class="section-card">
-  <h3>Add Notes</h3>
-  <div class="form-group">
-    <select id="strew" bind:value={selectedStrew}>
-      {#each strewOptions as option}
-        <option value={option}>{option}</option>
-      {/each}
-    </select>
+<div class="card">
+  <div class="card-header">
+    <h3>Add Notes</h3>
   </div>
-
-  <div class="form-group">
-    <select id="indow" bind:value={selectedIndow}>
-      {#each indowOptions as option}
-        <option value={option}>{option}</option>
-      {/each}
-    </select>
-  </div>
-
-  <div class="form-group checkbox-group">
-    <input type="checkbox" id="opticalCtaraderRecognittion" bind:checked={opticalCtaraderRecognittionChecked} />
-    <label for="opticalCtaraderRecognittion">Optical Ctarader Recognittion</label>
-  </div>
-
-  <div class="form-group checkbox-group">
-    <input type="checkbox" id="audeMues" bind:checked={audeMuesChecked} />
-    <label for="audeMues">Aude Mues</label>
-  </div>
-
-  <div class="form-group">
-    <input type="text" id="videon" bind:value={videonValue} placeholder="Videon" />
+  <div class="card-body">
+    <div class="mb-3">
+      <label for="notesContent" class="form-label">Notes:</label>
+      <textarea id="notesContent" class="form-control" bind:value={notesContent} rows="5"></textarea>
+    </div>
+    <div class="mb-3">
+      <label for="caseSelectNotes" class="form-label">Link to Case (Optional):</label>
+      <select id="caseSelectNotes" class="form-control" bind:value={selectedCaseForNotes}>
+        <option value="">Select a case</option>
+        {#each caseOptions as option}
+          <option value={option.value}>{option.label}</option>
+        {/each}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="poiSelectNotes" class="form-label">Link to POI (Optional):</label>
+      <select id="poiSelectNotes" class="form-control" bind:value={selectedPoiForNotes}>
+        <option value="">Select a POI</option>
+        {#each poiOptions as option}
+          <option value={option.value}>{option.label}</option>
+        {/each}
+      </select>
+    </div>
+    <button class="btn btn-primary" on:click={handleSubmit}>Save Notes</button>
   </div>
 </div>
 
 <style>
-  .section-card {
+  .card {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    padding: 20px;
-    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
   }
 
-  .section-card h3 {
-    font-size: 1.2rem;
-    margin-bottom: 15px;
-    color: #333;
+  .card-header {
     border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
   }
 
-  .form-group {
-    margin-bottom: 15px;
+  .card-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #333;
   }
 
-  .form-group label {
-    display: block;
-    margin-bottom: 5px;
+  .form-label {
     font-weight: bold;
-    color: #555;
+    margin-bottom: 0.5rem;
+    display: block;
   }
 
-  .form-group select,
-  .form-group input[type="text"] {
+  .form-control {
     width: 100%;
-    padding: 8px;
+    padding: 0.75rem;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 1rem;
   }
 
-  .checkbox-group {
-    display: flex;
-    align-items: center;
+  textarea.form-control {
+    resize: vertical;
   }
 
-  .checkbox-group input[type="checkbox"] {
-    margin-right: 10px;
+  .btn-primary {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
+  .btn-primary:hover {
+    background-color: #0056b3;
   }
 </style>

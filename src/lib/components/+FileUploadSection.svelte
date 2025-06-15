@@ -1,242 +1,149 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { UploadDropzone } from '@uploadthing/svelte';
-  // import type { FileRouter } from '$lib/uploadthing'; // Corrected import path
+  import { createEventDispatcher } from 'svelte';
+  import Dropdown from '$lib/components/+Dropdown.svelte';
+  import Checkbox from '$lib/components/+Checkbox.svelte';
 
-  type FileRouter = {
-    imageUploader: {
-      metadata: {};
-      input: {};
-      output: {
-        key: string;
-        url: string;
-        name: string;
-      }[];
-    };
+  const dispatch = createEventDispatcher();
+
+  let selectedCase: string = '';
+  let selectedPoi: string = '';
+  let file: File | null = null;
+  let summarize: boolean = false;
+  let tag: boolean = false;
+
+  const handleFileChange = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      file = input.files[0];
+    } else {
+      file = null;
+    }
   };
 
-  let uploadedFiles: { name: string; url: string; type: string }[] = [];
-  let selectedFileType: string = 'PDF';
-  let spreutChecked: boolean = false;
-  let topuitionValue: string = '';
-
-  let opticalCharacterRecognitionChecked: boolean = false;
-
-
-  const fileTypes = ['PDF', 'DOCX', 'JPG', 'PNG', 'MP4', 'MP3']; // Added video/audio types
-
-  function handleUploadComplete(res: any) {
-    console.log('Files:', res);
-    uploadedFiles = [...uploadedFiles, ...res.map((file: any) => ({ name: file.name, url: file.url, type: file.type }))];
-    alert('Upload Completed');
-  }
-
-  function handleUploadError(error: Error) {
-    alert(`Upload Error: ${error.message}`);
-  }
-
-  // Placeholder for AI auto-labeling on file drop
-  async function autoLabelFile(file: File): Promise<string[]> {
-    // In a real scenario, this would call an AI service (e.g., Ollama via API)
-    // to classify the file (e.g., "video testimony", "witness transcript").
-    console.log(`Simulating AI auto-labeling for: ${file.name}`);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
-    if (file.type.startsWith('video/')) return ['video-testimony', 'evidence'];
-    if (file.type === 'application/pdf') return ['document', 'report'];
-    if (file.type === 'text/plain') return ['transcript', 'notes'];
-    return ['unclassified'];
-  }
-
-  // This function would be called after a successful upload to trigger AI processing
-  async function processUploadedFile(fileData: { name: string; url: string; type: string }) {
-    console.log(`Processing uploaded file: ${fileData.name}`);
-    const labels = await autoLabelFile({ name: fileData.name, type: fileData.type } as File); // Mock File object
-    console.log(`AI Labels for ${fileData.name}: ${labels.join(', ')}`);
-    // Here you would update the database with the labels and potentially trigger summarization
-  }
-
-  // Monitor uploadedFiles for new additions and trigger processing
-  $: {
-    if (uploadedFiles.length > 0) {
-      // Process the last added file (or all new files if multiple were uploaded)
-      const newFile = uploadedFiles[uploadedFiles.length - 1];
-      processUploadedFile(newFile);
+  const handleSubmit = async () => {
+    if (!file) {
+      alert('Please select a file to upload.');
+      return;
     }
-  }
 
-const uploader = {
-  endpoint: "imageUploader",
-  onUploadAborted: () => { console.log("Upload aborted"); },
-  fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
-    // This is a placeholder function for the fetch API.
-    // In a real application, you would send the file to your backend.
-    // For now, we'll simulate a successful upload.
-    console.log('Simulating file upload for:', input);
-    
-    // If input is a Request object, extract the URL
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('caseId', selectedCase);
+    formData.append('poiId', selectedPoi);
+    formData.append('summarize', String(summarize));
+    formData.append('tag', String(tag));
 
-    // Simulate a response that matches the expected output of UploadThing
-    return new Response(JSON.stringify([{
-      key: 'simulated-key',
-      url: 'https://example.com/simulated-upload/' + Date.now(),
-      name: 'simulated-file.txt'
-    }]), { status: 200 });
-  },
-};
+    try {
+      const response = await fetch('/api/evidence/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        alert('File uploaded successfully!');
+        dispatch('uploadSuccess');
+        // Reset form
+        selectedCase = '';
+        selectedPoi = '';
+        file = null;
+        summarize = false;
+        tag = false;
+      } else {
+        const errorData = await response.json();
+        alert(`Upload failed: ${errorData.message || response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('An error occurred during file upload.');
+    }
+  };
+
+  // Dummy data for dropdowns - replace with actual data fetched from API
+  const caseOptions = [
+    { value: 'case1', label: 'Case 2023-001' },
+    { value: 'case2', label: 'Case 2023-002' },
+    { value: 'case3', label: 'Case 2023-003' },
+  ];
+
+  const poiOptions = [
+    { value: 'poi1', label: 'John Doe' },
+    { value: 'poi2', label: 'Jane Smith' },
+    { value: 'poi3', label: 'Criminal X' },
+  ];
 </script>
-<div class="section-card">
-  <h3>Automatic File Upload</h3>
-  <div class="form-group">
-    <label for="fileType">File Type for AI Processing</label>
-    <select id="fileType" bind:value={selectedFileType}>
-      {#each fileTypes as type}
-        <option value={type}>{type}</option>
-      {/each}
-    </select>
-  </div>
 
-  <div class="form-group checkbox-group">
-    <input type="checkbox" id="spreut" bind:checked={spreutChecked} />
-    <label for="spreut">Enable AI Summarization</label>
+<div class="card">
+  <div class="card-header">
+    <h3>Automatic File Upload</h3>
   </div>
-
-  <div class="form-group">
-    <label for="topuition">AI Model Parameters (Optional)</label>
-    <input type="text" id="topuition" bind:value={topuitionValue} placeholder="e.g., 'detailed', 'concise'" />
-  </div>
-
-  <div class="form-group checkbox-group">
-    <input type="checkbox" id="opticalRecognition" bind:checked={opticalCharacterRecognitionChecked} />
-    <label for="opticalRecognition">Enable Optical Character Recognition (OCR)</label>
-  </div>
-
-  <div class="upload-area">
-    <UploadDropzone endpoint="imageUploader" uploader={uploader} />
-  </div>
-
-  {#if uploadedFiles.length > 0}
-    <div class="file-previews masonry-grid">
-      {#each uploadedFiles as file (file.url)}
-        <div class="file-preview-item">
-          {#if file.type.startsWith('image/')}
-            <img src={file.url} alt={file.name} />
-          {:else if file.type === 'application/pdf'}
-            <img src="/pdf-icon.png" alt="PDF icon" class="pdf-icon" />
-            <p>{file.name}</p>
-          {:else if file.type.startsWith('video/')}
-            <video controls src={file.url} class="video-preview"></video>
-            <p>{file.name}</p>
-          {:else if file.type.startsWith('audio/')}
-            <audio controls src={file.url} class="audio-preview"></audio>
-            <p>{file.name}</p>
-          {:else}
-            <img src="/file-icon.png" alt="File icon" class="file-icon" />
-            <p>{file.name}</p>
-          {/if}
-        </div>
-      {/each}
+  <div class="card-body">
+    <div class="mb-3">
+      <label for="caseSelect" class="form-label">Select Case:</label>
+      <Dropdown id="caseSelect" bind:selected={selectedCase} options={caseOptions} />
     </div>
-  {/if}
+    <div class="mb-3">
+      <label for="poiSelect" class="form-label">Select POI (Optional):</label>
+      <Dropdown id="poiSelect" bind:selected={selectedPoi} options={poiOptions} />
+    </div>
+    <div class="mb-3">
+      <label for="fileInput" class="form-label">Upload File:</label>
+      <input type="file" id="fileInput" class="form-control" on:change={handleFileChange} />
+    </div>
+    <div class="mb-3 form-check">
+      <Checkbox id="summarizeCheckbox" bind:checked={summarize} label="Summarize with AI" />
+    </div>
+    <div class="mb-3 form-check">
+      <Checkbox id="tagCheckbox" bind:checked={tag} label="Tag with AI" />
+    </div>
+    <button class="btn btn-primary" on:click={handleSubmit}>Upload</button>
+  </div>
 </div>
 
 <style>
-  .section-card {
+  .card {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    padding: 20px;
-    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
   }
 
-  .section-card h3 {
-    font-size: 1.2rem;
-    margin-bottom: 15px;
-    color: #333;
+  .card-header {
     border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
   }
 
-  .form-group {
-    margin-bottom: 15px;
+  .card-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #333;
   }
 
-  .form-group label {
-    display: block;
-    margin-bottom: 5px;
+  .form-label {
     font-weight: bold;
-    color: #555;
+    margin-bottom: 0.5rem;
+    display: block;
   }
 
-  .form-group select,
-  .form-group input[type="text"] {
+  .form-control {
     width: 100%;
-    padding: 8px;
+    padding: 0.75rem;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 1rem;
   }
 
-  .checkbox-group {
-    display: flex;
-    align-items: center;
-  }
-
-  .checkbox-group input[type="checkbox"] {
-    margin-right: 10px;
-  }
-
-  .upload-area {
-    margin-top: 20px;
-    border: 2px dashed #ccc;
-    border-radius: 8px;
-    padding: 20px;
-    text-align: center;
-    min-height: 150px; /* Ensure visibility */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .file-previews {
-    margin-top: 20px;
-  }
-
-  .masonry-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    grid-gap: 10px;
-    grid-auto-rows: 10px; /* Base row height for masonry */
-  }
-
-  .file-preview-item {
-    background-color: #f9f9f9;
-    border: 1px solid #eee;
+  .btn-primary {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.5rem;
     border-radius: 4px;
-    padding: 10px;
-    text-align: center;
-    break-inside: avoid; /* Prevent items from breaking across columns */
-    grid-row-end: span 20; /* Adjust this value based on content height */
+    cursor: pointer;
+    font-size: 1rem;
   }
 
-  .file-preview-item img,
-  .file-preview-item video,
-  .file-preview-item audio {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 0 auto 10px auto;
-    border-radius: 4px;
-  }
-
-  .file-preview-item .pdf-icon,
-  .file-preview-item .file-icon {
-    width: 50px; /* Adjust size as needed */
-    height: 50px;
-  }
-
-  .file-preview-item p {
-    font-size: 0.9rem;
-    word-break: break-all;
+  .btn-primary:hover {
+    background-color: #0056b3;
   }
 </style>

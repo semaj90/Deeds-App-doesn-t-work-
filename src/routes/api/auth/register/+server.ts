@@ -1,16 +1,16 @@
 import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { users } from '$lib/server/db/schema';
-import { hashPassword } from '$lib/server/authUtils'; // Updated import
+import { hashPassword } from '$lib/server/authUtils';
 import { DrizzleError } from 'drizzle-orm';
 
 export async function POST({ request }) {
     const { name, email, password } = await request.json();
     console.log('[Register API] Received data:', { name, email, password: '***' });
 
-    if (!email || !password) {
-        console.warn('[Register API] Missing email or password');
-        throw error(400, 'Email and password are required.');
+    if (!email || !password || !name) {
+        console.warn('[Register API] Missing name, email, or password');
+        throw error(400, 'Name, email, and password are required.');
     }
 
     const hashedPassword = await hashPassword(password);
@@ -23,7 +23,8 @@ export async function POST({ request }) {
             name,
             email,
             hashedPassword, // This should match the schema's column name
-            role: 'user'
+            role: 'user',
+            profile: {} // Default empty object
         };
         console.log('[Register API] Attempting to insert user:', newUser);
         await db.insert(users).values(newUser);

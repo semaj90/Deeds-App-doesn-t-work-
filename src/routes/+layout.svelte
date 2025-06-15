@@ -5,6 +5,7 @@
   import { browser } from '$app/environment';
   import type { PageData } from './$types';
   import { userSessionStore } from '$lib/auth/userStore';
+  import '$lib/components/app.css';
 
   export let data: PageData;
 
@@ -42,17 +43,15 @@
 </script>
 
 <div class="app-container">
-  {#if user}
-    <Header {user} />
-    <div class="main-content">
+  <Header {user} />
+  <div class="main-content">
+    {#if user}
       <Sidebar />
-      <main class="container-fluid py-4">
-        <slot />
-      </main>
-    </div>
-  {:else}
-    <slot />
-  {/if}
+    {/if}
+    <main class="container-fluid py-4">
+      <slot />
+    </main>
+  </div>
 </div>
 
 <style>

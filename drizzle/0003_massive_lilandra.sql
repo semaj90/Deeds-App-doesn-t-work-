@@ -1,0 +1,1 @@
+ALTER TABLE "evidence" ALTER COLUMN "case_id" SET DATA TYPE varchar(36);

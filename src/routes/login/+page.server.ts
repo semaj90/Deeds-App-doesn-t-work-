@@ -1,15 +1,18 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
     if (locals.session?.user) {
         throw redirect(302, '/dashboard');
     }
-    return {};
+    const registered = url.searchParams.get('registered');
+    return {
+        message: registered ? 'Registration successful. Please log in.' : undefined
+    };
 };
 
 export const actions: Actions = {
-    default: async ({ request, url, locals: { auth } }) => {
+    default: async ({ request, url, fetch }) => {
         const form = await request.formData();
         const email = form.get('email')?.toString();
         const password = form.get('password')?.toString();
@@ -18,23 +21,24 @@ export const actions: Actions = {
             return fail(400, { error: 'Missing email or password' });
         }
 
-        try {
-            const result = await auth.signIn('credentials', {
-                email,
-                password,
-                redirectTo: url.searchParams.get('from') || '/dashboard'
-            });
+        const callbackUrl = url.searchParams.get('from') || '/';
+        const response = await fetch(`/api/auth/callback/credentials?callbackUrl=${encodeURIComponent(callbackUrl)}`, {
+            method: 'POST',
+            body: form,
+        });
 
-            if (!result?.ok) {
-                return fail(401, {
-                    error: 'Invalid credentials'
-                });
+        const contentType = response.headers.get('content-type') || '';
+        if (!response.ok) {
+            if (contentType.includes('application/json')) {
+                const data = await response.json();
+                return fail(response.status, { error: data.error || 'Invalid credentials' });
+            } else {
+                // Not JSON, just show a generic error
+                return fail(response.status, { error: 'Login failed. Please try again.' });
             }
-        } catch (e) {
-            console.error('Login error:', e);
-            return fail(500, {
-                error: 'Server error during login'
-            });
         }
+
+        // On success, redirect to homepage or intended page
+        throw redirect(303, callbackUrl);
     }
 };

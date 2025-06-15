@@ -27,10 +27,12 @@ export const load: ServerLoad = async ({ url, fetch }) => {
     }
 
     // Fetch recent cases (e.g., last 5, or all if few)
+    // Fetch cases for the logged-in user
     const caseResponse = await fetch('/api/cases');
     let cases: Case[] = [];
     if (caseResponse.ok) {
-        cases = await caseResponse.json();
+        const data = await caseResponse.json();
+        cases = data;
         console.log('[+page.server.ts] Successfully fetched cases.');
     } else {
         console.error('[+page.server.ts] Failed to fetch cases:', caseResponse.status, caseResponse.statusText);

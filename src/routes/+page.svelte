@@ -5,6 +5,7 @@
     import type { Criminal, Case } from '$lib/data/types';
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
+    import { onMount } from 'svelte';
 
     export let data: PageData;
 
@@ -73,6 +74,13 @@
         currentPage = 1;
         updateUrl();
     }
+
+    onMount(() => {
+        // If on the homepage, redirect to /account if logged in
+        if ($page.data.session?.user && $page.url.pathname === '/') {
+            goto('/account');
+        }
+    });
 </script>
 
 <svelte:head>
@@ -204,7 +212,13 @@
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                 {#each cases as caseItem (caseItem.id)}
                     <div class="col">
-                        <div class="card h-100 shadow-sm clickable" on:click={() => goto(`/case/${caseItem.id}`)} style="cursor:pointer;">
+                        <div class="card h-100 shadow-sm clickable"
+                             role="button"
+                             tabindex="0"
+                             aria-label="View case details"
+                             on:click={() => goto(`/case/${caseItem.id}`)}
+                             on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') goto(`/case/${caseItem.id}`); }}
+                             style="cursor:pointer;">
                             <div class="card-body">
                                 <h5 class="card-title text-primary">{caseItem.title}</h5>
                                 <p class="card-text"><strong>Status:</strong> {caseItem.status}</p>

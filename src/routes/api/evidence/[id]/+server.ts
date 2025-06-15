@@ -24,10 +24,10 @@ export async function PUT({ params, request }) {
 
     const updatedEvidence = await db.update(evidence)
         .set({
-            summary: summary,
+            aiSummary: summary,
             tags: tags,
-            caseId: caseId ? parseInt(caseId) : undefined,
-            poiId: poiId ? parseInt(poiId) : undefined,
+            caseId: caseId ? String(caseId) : undefined,
+            
         })
         .where(eq(evidence.id, parseInt(id)))
         .returning();
@@ -39,26 +39,17 @@ export async function PUT({ params, request }) {
     return json(updatedEvidence[0]);
 }
 
-export async function DELETE({ params }) {
+export async function DELETE({ params, locals }) {
+    if (!locals.session?.user) {
+        return new Response('Unauthorized', { status: 401 });
+    }
     const { id } = params;
-
-    const evidenceToDelete = await db.select().from(evidence).where(eq(evidence.id, parseInt(id))).limit(1);
-
-    if (!evidenceToDelete.length) {
-        return json({ error: 'Evidence not found' }, { status: 404 });
+    const deleted = await db.delete(evidence).where(eq(evidence.id, parseInt(id))).returning();
+    if (!deleted.length) {
+        return new Response('Not found', { status: 404 });
     }
-
-    const filePath = evidenceToDelete[0].filePath;
-
-    try {
-        // Delete the file from the local file system
-        await fs.unlink(filePath);
-    } catch (error) {
-        console.warn(`Failed to delete file ${filePath}:`, error);
-        // Continue with database deletion even if file deletion fails
-    }
-
-    await db.delete(evidence).where(eq(evidence.id, parseInt(id)));
-
-    return new Response(null, { status: 204 });
+    // Optionally, delete the file from disk if needed
+    // const filePath = path.join(UPLOAD_DIR, deleted[0].fileUrl.replace('/static/uploads/evidence/', ''));
+    // await fs.unlink(filePath).catch(() => {});
+    return json({ success: true });
 }

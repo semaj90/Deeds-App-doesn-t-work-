@@ -52,6 +52,19 @@
     }
 </script>
 
+<script lang="ts">
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
+
+  // Redirect to /account if on /dashboard
+  onMount(() => {
+    if ($page.url.pathname === '/dashboard') {
+      goto('/account');
+    }
+  });
+</script>
+
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-8">

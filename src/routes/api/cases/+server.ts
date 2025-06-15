@@ -1,20 +1,31 @@
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { cases } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, or, ilike } from 'drizzle-orm';
 
-// GET /api/cases - List all cases, with optional search
-export async function GET({ url }) {
+// GET /api/cases - List all cases for the logged-in user, with optional search
+export async function GET({ url, locals }) {
     try {
-        const search = url.searchParams.get('search')?.toLowerCase() || '';
-        let query = db.select().from(cases);
-        if (search) {
-            query = query.where(
-                (row) => row.title.toLowerCase().includes(search) || row.description.toLowerCase().includes(search)
-            );
+        const userId = locals.session?.user?.id;
+        if (!userId) {
+            return json({ error: 'Unauthorized' }, { status: 401 });
         }
-        const allCases = await query;
-        return json(allCases);
+        const search = url.searchParams.get('search')?.toLowerCase();
+        let userCases;
+        if (search) {
+            userCases = await db.select().from(cases).where(
+                and(
+                    eq(cases.createdBy, userId),
+                    or(
+                        ilike(cases.title, `%${search}%`),
+                        ilike(cases.description, `%${search}%`)
+                    )
+                )
+            );
+        } else {
+            userCases = await db.select().from(cases).where(eq(cases.createdBy, userId));
+        }
+        return json(userCases);
     } catch (error) {
         console.error('Error fetching cases:', error);
         return json({ error: 'Failed to fetch cases', details: error instanceof Error ? error.message : 'An unknown error occurred' }, { status: 500 });

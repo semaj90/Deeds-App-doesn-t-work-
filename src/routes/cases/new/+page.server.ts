@@ -1,31 +1,42 @@
-import { json, redirect } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { cases } from '$lib/server/db/schema';
 import { randomUUID } from 'crypto';
+import type { Actions } from './$types';
 
-export const POST = async ({ request, locals }) => {
-  try {
-    const { title, description, dangerScore, status, aiSummary } = await request.json();
+export const actions: Actions = {
+  create: async ({ request, locals }) => {
+    const form = await request.formData();
+    const title = form.get('title')?.toString();
+    const description = form.get('description')?.toString();
+    const dangerScore = Number(form.get('dangerScore')) || 0;
+    const status = form.get('status')?.toString() || 'open';
+    const aiSummary = form.get('aiSummary')?.toString() || null;
     if (!title || !description) {
-      return json({ error: 'Title and description are required.' }, { status: 400 });
-    }
-    const id = randomUUID();
-    const createdBy = locals.session?.user?.id;
+      return fail(400, { error: 'Title and description are required.' });
+    }    const id = randomUUID();
+    
+    // Get session from Auth.js
+    const session = await locals.auth();
+    const createdBy = session?.user?.id;
+    
     if (!createdBy) {
-      return json({ error: 'Not authenticated.' }, { status: 401 });
+      return fail(401, { error: 'Not authenticated.' });
     }
-    await db.insert(cases).values({
-      id,
-      title,
-      description,
-      dangerScore: dangerScore || 0,
-      status: status || 'open',
-      aiSummary: aiSummary || null,
-      createdBy
-    });
-    return json({ id }, { status: 201 });
-  } catch (e) {
-    console.error(e);
-    return json({ error: 'Failed to create case.' }, { status: 500 });
+    try {
+      await db.insert(cases).values({
+        id,
+        title,
+        description,
+        dangerScore,
+        status,
+        aiSummary,
+        createdBy
+      });
+      throw redirect(303, `/cases/${id}`);
+    } catch (e) {
+      console.error(e);
+      return fail(500, { error: 'Failed to create case.' });
+    }
   }
 };

@@ -1,16 +1,17 @@
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { cases } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
-// GET /api/cases/[id] - Get a single case by ID
-export async function GET({ params }) {
+// GET /api/cases/[id] - Get a single case by ID (only for owner)
+export async function GET({ params, locals }) {
+    const userId = locals.session?.user?.id;
+    if (!userId) {
+        return json({ error: 'Unauthorized' }, { status: 401 });
+    }
     try {
-        const caseId = parseInt(params.id);
-        if (isNaN(caseId)) {
-            return json({ error: 'Invalid case ID' }, { status: 400 });
-        }
-        const singleCase = await db.select().from(cases).where(eq(cases.id, caseId)).limit(1);
+        const caseId = params.id;
+        const singleCase = await db.select().from(cases).where(and(eq(cases.id, caseId), eq(cases.createdBy, userId))).limit(1);
         if (singleCase.length === 0) {
             return json({ error: 'Case not found' }, { status: 404 });
         }
@@ -21,56 +22,24 @@ export async function GET({ params }) {
     }
 }
 
-// PUT /api/cases/[id] - Update a case by ID
-export async function PUT({ params, request }) {
-    const caseId = parseInt(params.id);
-    if (isNaN(caseId)) {
-        return json({ error: 'Invalid case ID' }, { status: 400 });
+// PUT /api/cases/[id] - Update a case by ID (only for owner)
+export async function PUT({ params, request, locals }) {
+    const userId = locals.session?.user?.id;
+    if (!userId) {
+        return json({ error: 'Unauthorized' }, { status: 401 });
     }
-
+    const caseId = params.id;
     try {
-        const {
-            name,
-            title,
-            summary,
-            status,
-            dateOpened,
-            description,
-            verdict,
-            courtDates,
-            linkedCriminals,
-            linkedCrimes,
-            notes,
-            dangerScore,
-            aiSummary
-        } = await request.json();
-
-        if (!name || !title || !status || !dateOpened) {
-            return json({ error: 'Name, title, status, and date opened are required' }, { status: 400 });
+        // Only update if the case belongs to the user
+        const existing = await db.select().from(cases).where(and(eq(cases.id, caseId), eq(cases.createdBy, userId))).limit(1);
+        if (existing.length === 0) {
+            return json({ error: 'Case not found or not owned by user' }, { status: 404 });
         }
-
+        const updateData = await request.json();
         const updatedCase = await db.update(cases)
-            .set({
-                name,
-                title,
-                summary,
-                status,
-                dateOpened: dateOpened ? new Date(dateOpened) : undefined,
-                description,
-                verdict,
-                courtDates,
-                linkedCriminals,
-                linkedCrimes,
-                notes,
-                dangerScore,
-                aiSummary
-            })
-            .where(eq(cases.id, caseId))
+            .set(updateData)
+            .where(and(eq(cases.id, caseId), eq(cases.createdBy, userId)))
             .returning();
-
-        if (updatedCase.length === 0) {
-            return json({ error: 'Case not found or no changes made' }, { status: 404 });
-        }
         return json(updatedCase[0]);
     } catch (error) {
         console.error(`Error updating case with ID ${params.id}:`, error);
@@ -78,18 +47,20 @@ export async function PUT({ params, request }) {
     }
 }
 
-// DELETE /api/cases/[id] - Delete a case by ID
-export async function DELETE({ params }) {
+// DELETE /api/cases/[id] - Delete a case by ID (only for owner)
+export async function DELETE({ params, locals }) {
+    const userId = locals.session?.user?.id;
+    if (!userId) {
+        return json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const caseId = params.id;
     try {
-        const caseId = parseInt(params.id);
-        if (isNaN(caseId)) {
-            return json({ error: 'Invalid case ID' }, { status: 400 });
-        }
+        // Only delete if the case belongs to the user
         const deletedCase = await db.delete(cases)
-            .where(eq(cases.id, caseId))
+            .where(and(eq(cases.id, caseId), eq(cases.createdBy, userId)))
             .returning();
         if (deletedCase.length === 0) {
-            return json({ error: 'Case not found' }, { status: 404 });
+            return json({ error: 'Case not found or not owned by user' }, { status: 404 });
         }
         return json({ message: 'Case deleted successfully' });
     } catch (error) {

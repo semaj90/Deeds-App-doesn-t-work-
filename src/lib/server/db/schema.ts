@@ -10,6 +10,7 @@ export const users = pgTable('users', {
   hashedPassword: text('hashed_password'),
   role: varchar('role', { length: 50 }).notNull().default('user'),
   createdAt: timestamp('created_at').defaultNow(),
+  profile: jsonb('profile').default('{}'), // Default value for profile
 });
 
 export const accounts = pgTable(
@@ -36,12 +37,12 @@ export const accounts = pgTable(
   })
 );
 
-export const sessions = pgTable('session', { // Renamed table to 'session' for Auth.js compatibility
-  sessionToken: text('sessionToken').notNull().primaryKey(),
+export const sessions = pgTable('session', {
+  id: text('id').notNull().primaryKey(), // session id
   userId: text('userId')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  expires: timestamp('expires', { mode: 'date' }).notNull(),
+  expiresAt: timestamp('expiresAt', { mode: 'date' }).notNull(),
 });
 
 export const verificationTokens = pgTable(
@@ -86,7 +87,7 @@ export const evidence = pgTable('evidence', {
   fileType: varchar('file_type', { length: 50 }).notNull(),
   fileSize: integer('file_size').notNull(),
   criminalId: integer('criminal_id').references(() => criminals.id),
-  caseId: integer('case_id').references(() => cases.id),
+  caseId: varchar('case_id', { length: 36 }).references(() => cases.id), // changed to varchar(36)
   aiSummary: text('ai_summary'),
   tags: jsonb('tags').default('[]'),
   uploadedAt: timestamp('uploaded_at').defaultNow(),
@@ -95,7 +96,7 @@ export const evidence = pgTable('evidence', {
 
 // Cases
 export const cases = pgTable('cases', {
-  id: varchar('id', { length: 36 }).primaryKey(),
+  id: varchar('id', { length: 36 }).notNull().primaryKey(), // UUID or string, no identity/auto-increment
   title: varchar('title', { length: 255 }).notNull(),
   description: text('description').notNull(),
   dangerScore: integer('danger_score').default(0),
@@ -150,11 +151,27 @@ export const tags = pgTable('tags', {
 });
 
 export const evidenceTags = pgTable('evidence_tags', {
-  evidenceId: integer('evidence_id').references(() => evidence.id),
-  tagId: integer('tag_id').references(() => tags.id),
+  evidenceId: integer('evidence_id').notNull().references(() => evidence.id),
+  tagId: integer('tag_id').notNull().references(() => tags.id),
   assignedAt: timestamp('assigned_at').defaultNow(),
   assignedBy: text('assigned_by').references(() => users.id),
 }, (table) => ({
   pk: primaryKey({ columns: [table.evidenceId, table.tagId] }),
 }));
+
+export const authenticators = pgTable(
+  'authenticator',
+  {
+    credentialID: text('credentialID').notNull().primaryKey(),
+    userId: text('userId')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    providerAccountId: text('providerAccountId').notNull(),
+    credentialPublicKey: text('credentialPublicKey').notNull(),
+    counter: integer('counter').notNull(),
+    credentialDeviceType: text('credentialDeviceType').notNull(),
+    credentialBackedUp: integer('credentialBackedUp').notNull(), // boolean as integer (0/1)
+    transports: text('transports'),
+  }
+);
 

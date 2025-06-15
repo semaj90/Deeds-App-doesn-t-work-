@@ -1,4 +1,7 @@
 import { auth } from '$lib/server/auth';
+import { redirect, error } from '@sveltejs/kit';
+import type { Handle } from '@sveltejs/kit';
+import type { Session } from '@auth/core/types';
 
 // Only one handle export is allowed. Wrap auth.handle and add custom logic.
 export const handle: Handle = async ({ event, resolve }) => {
@@ -9,7 +12,8 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
 
     // Custom logic after Auth.js
-    const session: Session | null = await event.locals.getSession();
+    const session: Session | null = await event.locals.auth();
+    // For backwards compatibility
     event.locals.session = session;
 
     const protectedPaths = ['/dashboard', '/criminals', '/cases', '/statutes', '/evidence'];

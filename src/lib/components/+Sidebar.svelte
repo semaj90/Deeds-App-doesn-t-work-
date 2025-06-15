@@ -6,10 +6,11 @@
     { name: 'Cases', icon: '🗂️', href: '/cases' },
     { name: 'Criminals', icon: '🧑‍⚖️', href: '/criminals' },
     { name: 'Statutes', icon: '⚖️', href: '/statutes' },
+    { name: 'Interactive Canvas', icon: '🎨', href: '/interactive-canvas' },
     { name: 'About', icon: 'ℹ️', href: '/about' },
   ];
 
-  let activeItem = 'Cases'; // Default active item
+  let activeItem = 'Interactive Canvas'; // Default active item for the new UI
 </script>
 
 <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
@@ -32,9 +33,5 @@
 </div>
 
 <style>
-  /* No custom styles needed for Bootstrap 5 layout */
-  .example-text {
-    font-size: 0.75em; /* Adjust as needed for smaller font */
-    color: #6c757d; /* A subtle color for example text */
-  }
+  /* All styling handled by DaisyUI utility classes */
 </style>

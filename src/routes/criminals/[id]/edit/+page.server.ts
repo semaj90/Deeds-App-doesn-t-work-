@@ -4,6 +4,9 @@ import type { Criminal, Statute, Crime } from '$lib/data/types';
 import { db } from '$lib/server/db';
 import { crimes, statutes } from '$lib/server/db/schema';
 
+
+
+
 export const load: PageServerLoad = async ({ params, fetch }) => {
     const criminalId = parseInt(params.id); // Parse criminalId to number
     const criminalResponse = await fetch(`http://localhost:5173/api/criminals/${criminalId}`);

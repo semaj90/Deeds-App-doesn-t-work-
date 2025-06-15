@@ -37,14 +37,14 @@ async function seedDefaultUsers() {
 	await db.insert(users).values([
 		{
 			email: adminEmail,
-			hashedPassword: adminPassword, // Changed to hashedPassword
+			hashedPassword: adminPassword, // use hashedPassword
 			role: 'admin',
 			name: 'Admin User',
 			id: 'user_admin01' // Example static ID
 		},
 		{
 			email: userEmail,
-			hashedPassword: userPassword, // Changed to hashedPassword
+			hashedPassword: userPassword, // use hashedPassword
 			role: 'user',
 			name: 'Regular User',
 			id: 'user_regular01' // Example static ID

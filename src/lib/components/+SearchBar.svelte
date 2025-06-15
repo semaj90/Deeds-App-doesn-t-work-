@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { debounce } from 'lodash-es';
+  import debounce from 'lodash-es/debounce';
 
   export let placeholder = 'Search...';
   export let value = '';

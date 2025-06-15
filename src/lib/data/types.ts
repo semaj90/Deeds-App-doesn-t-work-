@@ -1,5 +1,5 @@
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
-import { cases, criminals, statutes, users } from '$lib/server/db/schema';
+import { cases, criminals, statutes, users, evidence } from '$lib/server/db/schema';
 
 export type Case = InferSelectModel<typeof cases>;
 export type NewCase = InferInsertModel<typeof cases>;
